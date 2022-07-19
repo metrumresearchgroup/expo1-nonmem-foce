@@ -1,0 +1,49 @@
+\setlength{\tabcolsep}{5pt} 
+\begin{threeparttable}
+\renewcommand{\arraystretch}{1.1}
+\begin{tabular}[h]{lccccr}
+\hline
+Variable & n & Mean & Median & SD & Min / Max \\
+\hline
+\multicolumn{6}{l}{\textbf{Daily dose: 5 mg}}\\%--pmtables-insert-panel
+AUC & 5 & 1.50 & 1.53 & 0.829 & 0.681 / 2.66 \\
+Cmax & 5 & 0.108 & 0.112 & 0.0588 & 0.0499 / 0.186 \\
+Cmin & 5 & 0.0371 & 0.0355 & 0.0226 & 0.0154 / 0.0707 \\
+\hline \multicolumn{6}{l}{\textbf{Daily dose: 10 mg}}\\%--pmtables-insert-panel
+AUC & 15 & 2.94 & 2.48 & 1.50 & 1.14 / 7.24 \\
+Cmax & 15 & 0.209 & 0.192 & 0.0895 & 0.0879 / 0.457 \\
+Cmin & 15 & 0.0729 & 0.0603 & 0.0460 & 0.0243 / 0.209 \\
+\hline \multicolumn{6}{l}{\textbf{Daily dose: 25 mg}}\\%--pmtables-insert-panel
+AUC & 65 & 8.85 & 7.80 & 3.67 & 2.72 / 20.9 \\
+Cmax & 65 & 0.583 & 0.555 & 0.196 & 0.245 / 1.07 \\
+Cmin & 65 & 0.240 & 0.207 & 0.129 & 0.0485 / 0.706 \\
+\hline \multicolumn{6}{l}{\textbf{Daily dose: 50 mg}}\\%--pmtables-insert-panel
+AUC & 10 & 14.4 & 12.7 & 5.47 & 8.70 / 27.2 \\
+Cmax & 10 & 0.986 & 0.940 & 0.260 & 0.670 / 1.44 \\
+Cmin & 10 & 0.372 & 0.299 & 0.200 & 0.179 / 0.872 \\
+\hline \multicolumn{6}{l}{\textbf{Daily dose: 75 mg}}\\%--pmtables-insert-panel
+AUC & 10 & 22.9 & 22.2 & 6.06 & 14.4 / 34.3 \\
+Cmax & 10 & 1.48 & 1.47 & 0.339 & 1.05 / 1.92 \\
+Cmin & 10 & 0.611 & 0.590 & 0.199 & 0.336 / 1.03 \\
+\hline \multicolumn{6}{l}{\textbf{Daily dose: 100 mg}}\\%--pmtables-insert-panel
+AUC & 15 & 31.2 & 31.2 & 11.2 & 12.9 / 53.4 \\
+Cmax & 15 & 2.14 & 2.09 & 0.670 & 0.957 / 3.69 \\
+Cmin & 15 & 0.803 & 0.804 & 0.348 & 0.286 / 1.43 \\
+\hline \multicolumn{6}{l}{\textbf{Daily dose: 150 mg}}\\%--pmtables-insert-panel
+AUC & 5 & 49.0 & 46.2 & 20.5 & 26.9 / 82.2 \\
+Cmax & 5 & 3.18 & 3.09 & 1.11 & 2.22 / 5.02 \\
+Cmin & 5 & 1.32 & 1.22 & 0.655 & 0.557 / 2.36 \\
+\hline \multicolumn{6}{l}{\textbf{Daily dose: 200 mg}}\\%--pmtables-insert-panel
+AUC & 5 & 55.8 & 59.3 & 15.1 & 34.5 / 75.9 \\
+Cmax & 5 & 4.22 & 4.53 & 0.966 & 2.97 / 5.20 \\
+Cmin & 5 & 1.32 & 1.35 & 0.465 & 0.661 / 1.97 \\
+\hline
+\end{tabular}
+\begin{tablenotes}[flushleft]
+\item AUC: ng$\cdot$hr/mL, Cmax: ng/mL, Cmin: ng/mL
+\item All exposure metrics at steady state
+\item N: number of individuals
+\item Source code: pk-ebe-simulate.R
+\item Source file: pk-ebe-normal.tex
+\end{tablenotes}
+\end{threeparttable}

@@ -1,0 +1,49 @@
+{
+    "bbi_version": "v3.1.1",
+    "model_name": "100.ctl",
+    "original_model": "100.ctl",
+    "model_path": "/data/home/sethg/example-projects/bbr-nonmem-poppk-foce/model/pk/100/100.ctl",
+    "data_path": "../../../data/derived/analysis3.csv",
+    "data_md5": "84a596d0fd81c2d187a64bc62d96b433",
+    "model_md5": "489b0179e189398b637654201177b123",
+    "model_filename": "100",
+    "model_extension": "ctl",
+    "original_path": "/data/home/sethg/example-projects/bbr-nonmem-poppk-foce/model/pk/100",
+    "output_dir": "/data/home/sethg/example-projects/bbr-nonmem-poppk-foce/model/pk/100",
+    "configuration": {
+        "clean_lvl": 1,
+        "git": true,
+        "bbi_binary": "/data/apps/bbi",
+        "output_dir": "{{ .Name }}",
+        "threads": 1,
+        "local": {},
+        "nonmem": {
+            "nm73gf": {
+                "home": "/opt/NONMEM/nm73gf",
+                "executable": "nmfe73",
+                "nmqual": true
+            },
+            "nm73gf_nmfe": {
+                "home": "/opt/NONMEM/nm73gf_nmfe",
+                "executable": "nmfe73"
+            },
+            "nm74gf": {
+                "home": "/opt/NONMEM/nm74gf",
+                "executable": "nmfe74",
+                "nmqual": true,
+                "default": true
+            },
+            "nm74gf_nmfe": {
+                "home": "/opt/NONMEM/nm74gf_nmfe",
+                "executable": "nmfe74"
+            }
+        },
+        "parallel": false,
+        "nmfe_options": {
+            "maxlim": 100
+        },
+        "mpi_exec_path": "/usr/local/mpich3/bin/mpiexec",
+        "parallel_timeout": 2147483647
+    },
+    "error": null
+}

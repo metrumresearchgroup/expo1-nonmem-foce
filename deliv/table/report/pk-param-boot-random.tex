@@ -1,0 +1,39 @@
+\setlength{\tabcolsep}{5pt} 
+\begin{threeparttable}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}[h]{lccccc}
+\hline
+\multicolumn{2}{c}{} & \multicolumn{2}{c}{Final model} & \multicolumn{2}{c}{Non-parametric bootstrap} \\
+\cmidrule(lr){3-4}
+\cmidrule(lr){5-6}
+ &  & Estimate & Shrinkage (\%) & Median & 95\% CI \\
+\hline
+\multicolumn{6}{l}{\textbf{Interindividual variance parameters}}\\%--pmtables-insert-panel
+IIV-KA & $\Omega_{(1,1)}$ & 0.219 [CV\%=49.4] & 14.1 & 0.218 & 0.130, 0.331 \\
+IIV-V2/F & $\Omega_{(2,2)}$ & 0.0824 [CV\%=29.3] & 5.22 & 0.0821 & 0.0643, 0.101 \\
+IIV-CL/F & $\Omega_{(3,3)}$ & 0.114 [CV\%=34.8] & 0.942 & 0.112 & 0.0896, 0.140 \\
+\hline \multicolumn{6}{l}{\textbf{Interindividual covariance parameters}}\\%--pmtables-insert-panel
+V2/F-KA & $\Omega_{(2,1)}$ & 0.0668 [Corr=0.498] & - & 0.0656 & 0.0328, 0.108 \\
+CL/F-KA & $\Omega_{(3,1)}$ & 0.121 [Corr=0.767] & - & 0.121 & 0.0805, 0.173 \\
+CL/F-V2/F & $\Omega_{(3,2)}$ & 0.0704 [Corr=0.725] & - & 0.0696 & 0.0525, 0.0882 \\
+\hline \multicolumn{6}{l}{\textbf{Residual variance}}\\%--pmtables-insert-panel
+Proportional & $\Sigma_{(1,1)}$ & 0.0399 [CV\%=20.0] & 5.02 & 0.0400 & 0.0376, 0.0424 \\
+\hline
+\end{tabular}
+\end{threeparttable}
+\vskip 0.67cm
+\begin{minipage}{1\linewidth}
+\linespread{1.1}\selectfont
+\rule{1\linewidth}{0.4pt}
+\vskip 0.02cm
+The confidence interval was determined from the 
+2.5th and 97.5th percentiles of the non-parametric 
+bootstrap (n=1000) estimates. \newline
+Abbreviations: CI = confidence interval; 
+                        Corr = correlation coefficient;
+                        CV = coefficient of variation \newline
+CV\% of log-normal omegas = sqrt(exp(estimate) - 1) $\cdot$ 100 \newline
+CV\% of sigma = sqrt(estimate) $\cdot$ 100 \newline
+Source code: pk-final-model-table-boot.R \newline
+Source file: pk-param-boot-random.tex \newline
+\end{minipage}

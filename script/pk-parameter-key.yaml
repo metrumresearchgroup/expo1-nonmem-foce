@@ -1,0 +1,148 @@
+##' name = THETA, OMEGA, SIGMA
+##' 
+##' abb = abbreviation you want to appear in the parameter table (use latex coding)
+##' 
+##' desc = description you want to appear in the parameter table
+##' 
+##' panel = indicate which panel each parameter should appear under. 
+##' Current options include:
+##'   panel=="struct" ~ "Structural model parameters"
+##'   panel=="cov" ~ "Covariate effect parameters"
+##'   panel=="IIV" ~ "Interindividual covariance parameters" (off-diagonals << function takes care of this)
+##'   panel=="IIV" ~ "Interindividual variance parameters" (diagonals << function takes care of this)
+##'   panel=="IOV"  ~ "Interoccasion variance parameters"
+##'   panel=="RV" ~ "Residual variance"
+##'   Additional options can be added to `getPanelName` function in `functions-table.R`
+##' 
+##' trans = define how do you want the parameter to be transformed
+##'   there are a finite options currently coded up (see below) but you're welcome
+##'   add new options. Current options include:
+##'        "none"       - untransformed parameters, e.g. THETAs or off-diagonals
+##'        "logTrans"   - THETAs estimated in the log domain
+##'        "logitTrans" - THETAs estimated using a logit transform
+##'        "lognormalOm"- for log-normal omegas e.g. CL = THETA(1) * exp(ETA(1)) - returns est.+CV%
+##'        "OmSD"       - for omegas where you want to return SD only - returns estimate & SD
+##'                     - use this for additive omegas e.g. CL = THETA(1) + ETA(1) 
+##'        "logitOmSD"  - for omegas using logit transform - returns estimate & SD (calculated with logitnorm package)
+##'                     - this option requires you provide the associated THETA separated with a "~"
+##'                     - e.g. "logitOmSD ~ THETA3"
+##'        "addErr"     - for additive error terms (coded using SIGMA in $ERROR) - returns est.+ SD
+##'        "propErr"    - for proportional error terms (coded using SIGMA in $ERROR) - returns est.+CV%
+# 
+# paramKey = tribble(
+#   ~name, ~abb, ~desc, ~panel, ~trans,
+#   "THETA1",  "KA (1/h)", "First order absorption rate constant",   "struct", "logTrans",
+#   "THETA2", "V2/F (L)",  "Apparent central volume",                "struct", "logTrans",
+#   "THETA3", "CL/F (L/h)", "Apparent clearance",                    "struct", "logTrans",
+#   "THETA4", "V3/F (L)",  "Apparent peripheral volume",             "struct", "logTrans",
+#   "THETA5", "Q/F (L/h)", "Apparent intercompartmental clearance",  "struct", "logTrans",
+#   "THETA6", "$\\text{CL/F}_{eGFR}$", "eGFR effect on CL/F",        "cov",    "none",
+#   "THETA7", "$\\text{CL/F}_{AGE}$", "Age effect on CL/F",          "cov",    "none",
+#   "THETA8", "$\\text{CL/F}_{ALB}$", "Serum albumin effect on CL/F","cov",    "none",
+#   
+#   "OMEGA11", "IIV-KA",   "Variance of absorption",     "IIV", "lognormalOm",
+#   "OMEGA22", "IIV-V2/F", "Variance of central volume", "IIV", "lognormalOm",
+#   "OMEGA33", "IIV-CL/F", "Variance of clearance",      "IIV", "lognormalOm",
+#   
+#   "OMEGA21", "V2/F-KA", "Covariance of V2/F - KA",    "IIV", "none",
+#   "OMEGA31", "CL/F-KA", "Covariance of CL/F - KA",    "IIV", "none",
+#   "OMEGA32", "CL/F-V2/F", "Covariance of CL/F - V2/F","IIV", "none",
+# 
+#   "SIGMA11", "Proportional", "Variance", "RV", "propErr"
+# )
+
+a: 
+  name: THETA1
+  abb: "KA (1/h)"
+  desc: "First order absorption rate constant"
+  panel: struct
+  trans: logTrans
+b: 
+  name: THETA2
+  abb: "V2/F (L)"
+  desc: "Apparent central volume"
+  panel: struct
+  trans: logTrans
+c: 
+  name: THETA3
+  abb: "CL/F (L/h)"
+  desc: "Apparent clearance"
+  panel: struct
+  trans: logTrans
+d: 
+  name: THETA4
+  abb: "V3/F (L)"
+  desc: "Apparent peripheral volume"
+  panel: struct
+  trans: logTrans
+e: 
+  name: THETA5
+  abb: "Q/F (L/h)"
+  desc: "Apparent intercompartmental clearance"
+  panel: struct
+  trans: logTrans
+f: 
+  name: THETA6
+  abb: "CL/F ~ eGFR"
+  desc: "eGFR effect on CL/F"
+  panel: cov
+  trans: none
+g: 
+  name: THETA7
+  abb: "CL/F ~ Age"
+  desc: "Age effect on CL/F"
+  panel: cov
+  trans: none
+h: 
+  name: THETA8
+  abb: "CL/F ~ ALB"
+  desc: "Serum albumin effect on CL/F"
+  panel: cov
+  trans: none
+
+
+aa: 
+  name: OMEGA11
+  abb: "IIV-KA"
+  desc: "Variance of absorption"
+  panel: IIV
+  trans: lognormalOm
+bb: 
+  name: OMEGA22
+  abb: "IIV-V2/F"
+  desc: "Variance of central volume"
+  panel: IIV
+  trans: lognormalOm
+cc: 
+  name: OMEGA33
+  abb: "IIV-CL/F"
+  desc: "Variance of clearance"
+  panel: IIV
+  trans: lognormalOm
+
+dd: 
+  name: OMEGA21
+  abb: "V2/F-KA"
+  desc: "Covariance of V2/F - KA"
+  panel: IIV
+  trans: none
+ee: 
+  name: OMEGA31
+  abb: "CL/F-KA"
+  desc: "Covariance of CL/F - KA"
+  panel: IIV
+  trans: none
+ff: 
+  name: OMEGA32
+  abb: "CL/F-V2/F"
+  desc: "Covariance of CL/F - V2/F"
+  panel: IIV
+  trans: none
+
+
+gg: 
+  name: SIGMA11
+  abb: "Proportional"
+  desc: "Variance"
+  panel: RV
+  trans: propErr

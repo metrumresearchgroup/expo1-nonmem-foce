@@ -1,0 +1,14 @@
+script/build
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+.DS_Store
+*.tar.gz
+model/pk/999
+model/pk/boot/*
+script/Rplots.pdf
+bin/*
+!bin/.gitkeep
+tests
+data/sim/*.RDS

@@ -1,0 +1,41 @@
+$PROB RUN# 100 - fit of Phase I data base model
+$INPUT C NUM ID TIME SEQ CMT EVID AMT DV AGE WT HT EGFR ALB BMI SEX AAG
+       SCR AST ALT CP TAFD TAD LDOS MDV BLQ PHASE
+
+$DATA ../../../data/derived/analysis3.csv IGNORE=@ IGNORE=(BLQ.EQ.1)
+
+$SUBROUTINE ADVAN2 TRANS2
+
+$PK
+ 
+;log transformed PK parms
+ 
+KA   = EXP(THETA(1)+ETA(1))
+V   = EXP(THETA(2)+ETA(2))
+CL   = EXP(THETA(3)+ETA(3))
+
+S2 = V/1000 ; dose in mcg, conc in mcg/mL
+
+$ERROR
+IPRED = F 
+
+Y=IPRED*(1+EPS(1))
+
+$THETA  ; log values
+(-0.69)   ;  1 KA (1/hr) - 1.5
+(3.5)   ;  2 V2 (L) - 60
+(1)     ;  3 CL (L/hr) - 3.5
+
+
+$OMEGA BLOCK(3)
+0.2   ;ETA(KA)
+0.01 0.2   ;ETA(V)
+0.01 0.01 0.2   ;ETA(CL)
+
+$SIGMA
+0.05     ; 1 pro error
+
+$EST MAXEVAL=9999 METHOD=1 INTER SIGL=9 NSIG=3 PRINT=1 MSFO=./100.msf 
+$COV PRINT=E
+$TABLE NUM CL V KA ETAS(1:LAST) IPRED NPDE CWRES NOPRINT ONEHEADER FILE=100.tab
+$TABLE NUM CL V KA ETAS(1:LAST) NOAPPEND NOPRINT ONEHEADER FILE=100par.tab

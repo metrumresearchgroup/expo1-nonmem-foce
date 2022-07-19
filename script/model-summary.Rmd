@@ -1,0 +1,165 @@
+---
+title: "Model Summary"
+output: html_document
+---
+
+```{r libraries, include = FALSE}
+library(bbr)
+library(tidyverse)
+
+source("functions-model.R")
+
+knitr::opts_chunk$set(
+  out.width = 500, 
+  out.height = 750
+)
+```
+
+```{r directories, include=F}
+### Directories ----------------------------
+scriptDir <- getwd()
+projectDir <- file.path("..")
+figDir <- file.path(projectDir, "deliv", "figure")
+tabDir <- file.path(projectDir, "deliv", "table")
+```
+
+```{r echo = FALSE, results = "asis"}
+cat("## Run log")
+```
+
+```{r }
+# create the raw run log
+MODEL_DIR <- "../model/pk"
+
+log_df <- run_log(MODEL_DIR, .recurse = FALSE) %>% 
+      add_config() %>%
+      add_summary()
+```
+
+```{r echo = FALSE, results = "asis"}
+# These two are helpers for doing some
+# automatic QC on all the models in log_df
+
+# check if model or data files have changed (from bbr)
+check_up_to_date(log_df)
+
+# check if any rogue tags that aren't in tags.yaml (from functions-model.R)
+tags_ok <- audit_tags(log_df)
+if (all(tags_ok)) cat("All tags are valid.\n")
+```
+
+```{r}
+# format log_df for display
+log_df %>% 
+  collapse_to_string(based_on, tags, notes) %>%
+  select(run, based_on, description, tags, ofv, param_count, notes) %>%
+  knitr::kable()
+```
+
+### Tags diff
+
+_Optionally view the tags that were added or removed for each model._
+
+```{r}
+# format log_df for display
+log_df %>% 
+  add_tags_diff() %>%
+  collapse_to_string(tags) %>%
+  select(run, based_on, tags, tags_added, tags_removed) %>%
+  knitr::kable()
+```
+
+# Modeling notes
+
+## Model 100-101
+
+Compare Model 100 (one-cmpt) and 101 (two-cmpt)
+
+```{r obj_100_101}
+# this is a helper from functions-model.R which filters
+# the summary log tibble to only the specified columns
+compare_ofv(100:101, log_df)
+```
+
+\newpage
+Compare CWRES between model 100 & 101
+```{r 100_101_cwres_time_tad}
+knitr::include_graphics(file.path(figDir, "100/100-cwres-pred-time-tad.pdf"))
+knitr::include_graphics(file.path(figDir, "101/101-cwres-pred-time-tad.pdf"))
+```
+
+Second compartment reduces the objective function and residual issues.
+
+\newpage
+
+# Model 101-102
+
+Look at ETA's vs. covariates to decide how to begin incorporating covariates.
+
+```{r}
+mod101 <- read_model(file.path(MODEL_DIR, 101))
+print(mod101$notes)
+```
+
+```{r, out.extra='page=2'}
+knitr::include_graphics(file.path(figDir, "101/101-eta-all-cont-cov.pdf"))
+```
+
+```{r, out.extra='page=2'}
+knitr::include_graphics(file.path(figDir, "102/102-eta-all-cont-cov.pdf"))
+```
+
+## Models 102-104
+Proportional, additive or combined RUV
+
+```{r}
+compare_ofv(102:104, log_df, notes)
+```
+
+\newpage
+## Models 105-106
+105 adds pre-specified covariates. For 106, client was interested in adding Albumin to CL.
+  
+```{r}
+# filter the run log to only models with this covariate tag
+TAGS <- yaml::read_yaml("tags.yaml")
+
+log_df %>% 
+  filter(map_lgl(tags, ~ TAGS$cov_cl_egfr %in% .x)) %>%
+  collapse_to_string(tags) %>%
+  select(run, tags, ofv, param_count, condition_number) %>%
+  knitr::kable()
+```
+
+# Comparing final model to base model
+
+```{r}
+log_df %>% 
+  filter(!is.na(description)) %>%
+  collapse_to_string(tags) %>%
+  select(run, description, tags, ofv, param_count) %>%
+  knitr::kable()
+```
+
+```{r}
+mod102 <- read_model(file.path(MODEL_DIR, 102))
+mod106 <- read_model(file.path(MODEL_DIR, 106))
+
+tags_diff(mod102, mod106)
+```
+
+```{r, results = "asis"}
+model_diff(mod102, mod106)
+```
+
+
+# Final model - 106
+
+```{r}
+mod106 %>%
+  model_summary() %>%
+  param_estimates() %>%
+  mutate(across(where(is.numeric), pmtables::sig)) %>%
+  knitr::kable()
+```
+

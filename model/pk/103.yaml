@@ -1,0 +1,16 @@
+model_type: nonmem
+based_on:
+- '102'
+model_path: 103.ctl
+tags:
+- two-compartment + absorption
+- ETA-CL
+- ETA-KA
+- ETA-V2
+- CLWT-allo
+- V2WT-allo
+- QWT-allo
+- V3WT-allo
+- additive RUV
+notes:
+- Additive only RUV performs poorly and will not consider going forward.

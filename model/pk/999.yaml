@@ -1,0 +1,5 @@
+model_type: nonmem
+model_path: 999.ctl
+based_on:
+- '106'
+notes: Simulation run

@@ -1,0 +1,302 @@
+---
+title: "Individual plots of DV, PRED and IPRED over time or TAD"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+    depth: 2
+params:
+  run: 106
+  modelDir: "model/pk"
+  script: "id-dv-pred-plots.Rmd"
+  yspec: "analysis3.yml"
+  drugNameUnits: "Mockdralazine concentration (mg/L)"
+  include_code: FALSE
+  include_plots: FALSE
+  run_mrggsave: TRUE
+---
+
+# Purpose
+
+To produce a set of individual diagnostic plots that show the PRED, IPRED and DV 
+versus TIME and TAD.
+
+Please note these plots are just meant to provide an example of what could be created and how. 
+They are not an exhaustive list of every possible plot and were chosen with the project 
+aims in mind. 
+
+While this _should_ give users examples of plots generated with the most up-to-date 
+packages and methods, we're always happy to have feedback. If you know of more 
+efficient methods or want to suggest alternative ways of plotting the figures 
+please open an issue with the details. 
+
+
+# Set up
+
+```{r setup_general, include = F}
+### General script set-up
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE,
+  fig.height = 5, fig.width = 5)
+
+### Libraries ----------------------------
+suppressPackageStartupMessages(library(tidyverse))
+library(pmplots)
+library(bbr)
+library(PKPDmisc)
+library(yaml)
+library(yspec)
+library(mrggsave)
+suppressPackageStartupMessages(library(glue))
+suppressPackageStartupMessages(library(cowplot))
+
+### Directories ----------------------------
+figDir <- here::here("deliv", "figure")
+dataDir <- here::here("data")
+sourceDataDir <- file.path(dataDir, "source")
+derivedDataDir <- file.path(dataDir, "derived")
+
+if(!file.exists(figDir)) dir.create(figDir)
+
+thisScript <- params$script
+
+
+### Options ----------------------------
+options(mrg.script = params$script)
+options("mrggsave.dev" = "pdf")
+margin <- theme(plot.margin = unit(c(0.2, 0.2, 0.1, 0.1), "in"))
+parens <-  pmtables::ensure_parens
+```
+
+
+```{r load_any_functions, include = F}
+### Source function scripts
+# source(here::here('script/functions-diagnostics.R'))
+```
+
+### Model location
+Define `modelName` and path to the model directory (`MODEL_DIR`).
+
+```{r setup_bbr, echo = params$include_code, message = FALSE}
+# Set directories for bbr models ----------------------------
+# must go up an additional directory here as this script is located within the
+# diagnostics-templates directory
+MODEL_DIR <- params$modelDir
+modelName <- params$run
+thisModelPath <- file.path(MODEL_DIR, modelName)
+```
+
+### Figure location
+If saving figures out to pdf, define where those pdfs should be saved to.
+Here the figures are saved to ```deliv > figure > model_run_number```
+
+```{r makeDir_mrggsave, echo = params$include_code, eval = params$run_mrggsave}
+thisFigDir <- file.path(figDir, modelName)
+if(!file.exists(thisFigDir)) dir.create(thisFigDir)
+
+### set mrggsave figure directory here
+options(mrggsave.dir = thisFigDir)
+```
+
+
+# Model details - Run number `r params$run`
+
+```{r modelDetails, echo = params$include_code, results = "asis"}
+mod <- read_model(here::here(thisModelPath))
+mod
+```
+
+```{r modelOutputSummary, echo = params$include_code, results = "asis"}
+sum <- mod %>% model_summary()
+sum
+```
+
+
+# Load Spec
+The aim is to use the information in the spec file to label the figures automatically.
+
+```{r yspec_details, echo = params$include_code}
+
+# Tell R where to find the yml
+specLo <- here::here("data", "spec", params$yspec)
+
+# load in the spec file
+spec <- ys_load(specLo) %>% ys_namespace("plot")
+
+```
+
+
+# Read in data
+Read in the model details using `read_model`. Details stored in the `mod` object can be 
+used to identify the location of the source data (used in $DATA) - to see how this is done
+look at the `bbr::get_data_path()` and `bbr::build_path_from_model()` helper functions. 
+
+After reading in the nonmem dataset and the output dataset they're joined by a `NUM` column. **This assumes that a row number column (called `NUM`) was included during data assembly.** The idea here is that in NONMEM, you table just `NUM` and none of the other input data items. They all will get joined back to the nonmem output ... even character columns.
+
+The `data` used in the diagnostic plots has been filtered to only include the observations 
+(i.e. `EVID==0`). Note that further modifications maybe needed, for example, if BLQ data was 
+included in the model or if the `DV` was log-transformed. The dataset also converts
+the categorical covariates of interest to factors using the `yspec_add_factors` function 
+and details described in the spec file.
+
+The `id` subset gets the first record per ID. This would usually be the baseline value
+but consider filtering on a baseline flag if available. Also, if the model includes
+inter-occassion variaibility (IOV), the occassion variable should be included within the `distinct` function. 
+
+```{r read_in_data, echo = params$include_code, message=FALSE}
+
+# Read in model
+mod <- read_model(here::here(thisModelPath))
+
+# Get original dataset and nonmem output
+data0 <- nm_join(mod)
+
+# filter to observation rows only
+data <- data0 %>% 
+  filter(EVID==0) %>% 
+  yspec_add_factors(spec, STUDY, CP, RF, DOSE, .suffix = "")
+
+# filter to single row per ID and include factors 
+# id <- distinct(data, ID, .keep_all=TRUE) 
+```
+
+
+# Individual plots
+
+The following plots assume that the preferred x-axis labels are defined here. 
+
+```{r xAxis_label_names, echo = params$include_code}
+### Ideally get units from yaml 
+xTIME <- glue(pm_axis_time(), xunit = parens(spec$TIME$unit))
+xTAD <- glue(pm_axis_tad(), xunit = parens(spec$TAD$unit)) 
+yLAB <- params$drugNameUnits
+```
+
+# DV, PRED and IPRED vs TIME
+
+Create plots of DV, PRED and IPRED vs time (linear and log scale) for the full dataset 
+
+```{r DV_PRED_IPRED_TIME_plots, echo = params$include_code, message = FALSE}
+
+dv_pred_ipred_time_linear = data %>% 
+  dv_pred_ipred(
+    # facets = c("STUDY", "ID"), # option coming soon in pmplots
+    id_per_plot = 9,
+    ncol = 3,
+    xlab = xTIME,
+    ylab = yLAB,
+    angle = 45,
+    use_theme = theme_bw()
+  ) 
+
+dv_pred_ipred_time_log = data %>% 
+  dv_pred_ipred(
+    # facets = c("STUDY", "ID"), # option coming soon in pmplots
+    id_per_plot = 9,
+    ncol = 3,
+    xlab = xTIME,
+    ylab = yLAB,
+    angle = 45,
+    log_y = TRUE,
+    use_theme = theme_bw()
+  ) 
+
+```
+
+```{r include_DV_PRED_IPRED_TIME_plots, eval = params$include_plots, include = params$include_plots, echo = F, message = FALSE}
+print("DV, PRED and IPRED vs time (linear)")
+dv_pred_ipred_time_linear
+print("DV, PRED and IPRED vs time (log)")
+dv_pred_ipred_time_log
+
+```
+
+```{r save_DV_PRED_IPRED_TIME_plots, include = FALSE, eval = params$run_mrggsave, message = FALSE}
+# the stem can be made using c() or glue syntax 
+mrggsave(dv_pred_ipred_time_linear, 
+         stem = "id-dv-pred-ipred-time-linear", 
+         width = 6, height = 7)
+
+mrggsave(dv_pred_ipred_time_log, 
+         stem = "id-dv-pred-ipred-time-log",
+         width = 6, height = 7)
+
+
+```
+
+```{r rm_DV_PRED_IPRED_TIME_plots, include = F}
+rm(dv_pred_ipred_time_linear, dv_pred_ipred_time_log)
+```
+
+
+# DV, PRED and IPRED vs TAD
+
+Create plots of DV, PRED and IPRED vs TAD (linear and log scale) for the full dataset 
+
+```{r DV_PRED_IPRED_TAD_plots, echo = params$include_code, message = FALSE}
+
+dv_pred_ipred_tad_linear = data %>% 
+  dv_pred_ipred(
+    # facets = c("STUDY", "ID"), # option coming soon in pmplots
+    x = pm_axis_tad(),
+    id_per_plot = 9,
+    ncol = 3,
+    xlab = xTAD,
+    ylab = yLAB,
+    angle = 45,
+    use_theme = theme_bw()
+  ) 
+
+dv_pred_ipred_tad_log = data %>% 
+  dv_pred_ipred(
+    # facets = c("STUDY", "ID"), # option coming soon in pmplots
+    x = pm_axis_tad(),
+    id_per_plot = 9,
+    ncol = 3,
+    xlab = xTAD,
+    ylab = yLAB,
+    angle = 45,
+    log_y = TRUE,
+    use_theme = theme_bw()
+  ) 
+
+```
+
+```{r include_DV_PRED_IPRED_TAD_plots, eval = params$include_plots, include = params$include_plots, echo = F, message = FALSE}
+print("DV, PRED and IPRED vs tad (linear)")
+dv_pred_ipred_tad_linear
+print("DV, PRED and IPRED vs tad (log)")
+dv_pred_ipred_tad_log
+
+```
+
+```{r save_DV_PRED_IPRED_TAD_plots, include = FALSE, eval = params$run_mrggsave, message = FALSE}
+# the stem can be made using c() or glue syntax 
+mrggsave(dv_pred_ipred_tad_linear, 
+         stem = "id-dv-pred-ipred-tad-linear", 
+         width = 6, height = 7)
+
+mrggsave(dv_pred_ipred_tad_log, 
+         stem = "id-dv-pred-ipred-tad-log",
+         width = 6, height = 7)
+
+
+```
+
+```{r rm_DV_PRED_IPRED_TAD_plots, include = F}
+rm(dv_pred_ipred_tad_linear, dv_pred_ipred_tad_log)
+```
+
+
+
+
+# Session details
+
+It is considered good practice to include these details at the end of all rmd scripts
+
+```{r details, include = TRUE}
+Sys.getenv("AMI_NAME")
+sessioninfo::session_info()
+bbr::bbi_version()
+```
+
+

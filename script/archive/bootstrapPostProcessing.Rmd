@@ -1,0 +1,156 @@
+---
+title: "bootstrapPostProcessing"
+output: html_document
+---
+
+# ```{r setup, include=FALSE}
+# knitr::opts_chunk$set(echo = TRUE)
+# ```
+
+# Introduction
+
+This script shows how to construct a table of parameter estimates obtained by 
+running a bootstrap. The code to generate the bootstrapped datasets and run the models is in `bootstrapGenerate.Rmd`. Please refer to that script if you have not already 
+done that step.
+
+The output of this script will be read and used by [forestPlots.Rmd](forestPlots.Rmd) and other scripts (e.g. building parameter tables).
+
+# Setup
+
+
+```{r, setup}
+library(tidyverse)
+library(magrittr)
+library(mrgsolve)
+library(PKPDmisc)
+library(grid)
+library(bbr)
+library(glue)
+```
+
+# Examine model outputs
+
+First use `summary_log()` to get a tibble with information on all of the bootstrap runs.
+
+The `.fail_flags` argument is discussed in the next section.
+# This needs to be fixed after updating bootstrap runs
+```{r}
+
+sum_df <- summary_log(
+              "../../model/pk/boot", # now that it's archived it's one level deeper
+              #"../model/pk/boot",
+              .fail_flags = list(no_shk_file = TRUE)) %>%
+  mutate(run = basename(absolute_model_path)) %>% select(run, everything()) # creates a column with just run number and puts it first
+
+print(glue("Loaded summary for {nrow(sum_df)} models") )
+View(sum_df)
+```
+
+## Fail flags
+
+We are also passing `.fail_flags = list(no_shk_file = TRUE)` above. This is because we know that several runs did not generate an `.shk` file. You may not know this in advance and may need to re-run this call with the appropriate `.fail_flags` if you see a lot of errors below. You can see the [`bbr::model_summaries()` docs](https://metrumresearchgroup.github.io/bbr/reference/model_summaries.html) for more information about the `.fail_flags` argument.
+
+This code lets you see how many of the runs _needed_ to use the `.fail_flags` for the summary to work. In this example, these are the runs that _do not_ have an `.shk` file. 
+
+```{r}
+# see which models used the .fail_flags
+ff <- sum_df %>% filter(needed_fail_flags)
+print(glue("{nrow(ff)} models needed the fail flags: {paste(ff$run, collapse = ', ')}") )
+```
+
+**You may want to look at these runs manually** to determine if something went wrong in the modeling and consider whether they should be excluded from the analysis.
+
+## Summary Errors
+
+These are errors indicating that `bbr` could not parse the model output. This could be for a number of reasons, but hopefully you will not have any of these errors. However, **this is where you would see errors that could be addressed with the `.fail_flags` argument above.** 
+
+```{r}
+# see which models errored on the summary
+errors <- sum_df %>% filter(!is.na(error_msg))
+print(glue("{nrow(errors)} model summaries errored: {paste(errors$run, collapse = ', ')}") )
+
+# this will print out all the errors...
+#errors %>% pull(error_msg)
+```
+
+If you have any models that could not parse, you can search the error messages using `grepl()` or any string manipulation function. This is where you might see that several errors tell you there is no `.shk` file, which would indicate you should pass `.fail_flags = list(no_shk_file = TRUE)` (as we are doing above.)
+
+``` {r}
+# use grepl to filter them errors to look for a specific substring
+ERR_PATTERN <- "--no-grd-file" # look for this string in the error msg (can be regex)
+err_match <- errors %>% filter(grepl(ERR_PATTERN, error_msg))
+
+# print which ones match this
+print(glue("Error matches `{ERR_PATTERN}` on {nrow(err_match)} models: {paste(err_match$run, collapse = ', ')}") )
+
+# print the full errors that matched
+cat("\nErrors that match:\n")
+err_match %>% pull(error_msg)
+```
+
+## Heuristics
+
+Summary tracks certain heuristics...
+
+```{r}
+# look at any where any of the heuristics failed
+h_fail <- sum_df %>% filter(any_heuristics)
+print(glue("{nrow(h_fail)} models had at least one FAILING(?!) heuristic: {paste(h_fail$run, collapse = ', ')}") )
+#View(h_fail)
+
+sum_df %>% 
+  select(where(is.logical), -needed_fail_flags) %>% 
+  summarise_all(sum, na.rm = TRUE) %>% 
+  pivot_longer(everything())
+```
+
+If you had some, consider these things...
+
+## Filtering out runs
+
+You probably don't need to filter out any runs because what Curtis said, but if you want to...
+
+```{r}
+# filter out runs that shouldn't be used for analysis
+losers <- c(
+  ff$absolute_model_path,
+  errors$absolute_model_path,
+  err_match$absolute_model_path,
+  h_fail$absolute_model_path # might want to build a custom vector here instead of throwing all out? Or throw none of these out?
+) %>% unique()
+
+keepers <- sum_df %>% filter(!(absolute_model_path %in% losers))
+
+print(glue("Threw out {length(losers)} models\nKeeping {nrow(keepers)} models."))
+```
+
+# Get parameter estimates
+
+Get the param estimates for the runs you decided to keep.
+
+```{r}
+# WE SCRAPPED THIS FUNCTION, but there will be a new version at some point:
+# https://github.com/metrumresearchgroup/bbr/issues/147
+# WE NOW KYLE's CODE IN script/boot-collect.R
+#
+# ext <- keepers %>% bbr:::param_estimates.bbi_summary_log_df() %>% 
+#   pivot_wider(names_from = parameter_names,values_from = estimate)
+# 
+# #This drops the absolute model path and replaces it with the run number
+# ext <- ext %>% 
+#   mutate(run = basename(absolute_model_path)) %>%
+#   select(run, everything()) %>% 
+#   select(-absolute_model_path)
+# head(ext)
+# View(ext)
+```
+
+# Write out parameter estimates
+
+Once you are satisfied with the parameter table you have created, write it to a `.csv` that will be read and used by [forestPlots.Rmd](forestPlots.Rmd) and other scripts.
+
+```{r}
+# boot_output_dir<-file.path("..","data","boot")
+# if (!fs::dir_exists(boot_output_dir)) fs::dir_create(boot_output_dir)
+# write_csv(ext,file.path(boot_output_dir,"bootstrapParams.csv"))
+```

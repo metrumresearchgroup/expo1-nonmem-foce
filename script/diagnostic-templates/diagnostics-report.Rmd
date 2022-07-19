@@ -1,0 +1,540 @@
+---
+title: "Report diagnostics"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+    depth: 2
+params:
+  run: 102
+  modelDir: "model/pk"
+  script: "diagnostics-report.Rmd"
+  yspec: "analysis3.yml"
+  contCov: !r c("AGE","WT","ALB","EGFR")
+  catCov: !r c("STUDY", "RF", "CP", "DOSE")
+  etas: !r c("ETA1//ETA-KA", "ETA2//ETA-V/F", "ETA3//ETA-CL/F")
+  drugNameUnits: "concentration (mg/L)"
+  include_code: FALSE
+  include_plots: TRUE
+  run_mrggsave: TRUE
+---
+
+# Purpose
+
+To produce a set of diagnostic plots that will be included in the report. Please note
+that these plots are just meant to provide an example of what could be created and how. 
+They are not an exhaustive list of every possible plot and were chosen with the project 
+aims in mind. 
+
+While this _should_ give users examples of plots generated with the most up-to-date 
+packages and methods, we're always happy to have feedback. If you know of more 
+efficient methods or want to suggest alternative ways of plotting the figures 
+please open an issue with the details. 
+
+
+# Set up
+
+```{r setup_general, include = F, message=FALSE, warning = FALSE}
+### General script set-up
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE,
+                      fig.height = 5, fig.width = 5)
+
+### Libraries ----------------------------
+suppressPackageStartupMessages(library(tidyverse)) 
+library(pmplots)
+library(bbr)
+library(PKPDmisc)
+library(yaml)
+library(yspec)
+library(mrggsave)
+library(here) 
+suppressPackageStartupMessages(library(glue))
+library(patchwork)
+
+### Directories ----------------------------
+figDir <- here("deliv", "figure") 
+tabDir <- here("deliv", "table") 
+dataDir <- here("data") 
+sourceDataDir <- file.path(dataDir, "source")
+derivedDataDir <- file.path(dataDir, "derived")
+
+if(!file.exists(figDir)) dir.create(figDir)
+if(!file.exists(tabDir)) dir.create(tabDir)
+
+thisScript <- params$script
+
+
+### Options ----------------------------
+options(mrg.script = params$script)
+margin <- theme(plot.margin = unit(c(0.2, 0.2, 0.1, 0.1), "in"))
+parens <-  pmtables::ensure_parens
+```
+
+
+```{r load_any_functions, include = F}
+### Source function scripts
+source(here('script/functions-diagnostics.R'))
+```
+
+### Model location
+Define `modelName` and path to the model directory (`MODEL_DIR`).
+
+```{r setup_bbr, echo = params$include_code, message = FALSE}
+# Set directories for bbr models ----------------------------
+# must go up an additional directory here as this script is located within the
+# diagnostics-templates directory
+MODEL_DIR <- params$modelDir
+modelName <- params$run
+thisModelPath <- file.path(MODEL_DIR, modelName)
+```
+
+### Figure location
+If saving figures out to pdf, define where those pdfs should be saved to.
+Here the figures are saved to ```deliv > figure > model_run_number```
+
+```{r makeDir_mrggsave, echo = params$include_code, eval = params$run_mrggsave}
+thisFigDir <- file.path(figDir, modelName)
+if(!file.exists(thisFigDir)) dir.create(thisFigDir)
+
+### set mrggsave figure directory here and tell R whether you want the pdf,
+## the png or both (e.g.,  mrggsave.dev = "pdf,png")
+options(mrggsave.dir = thisFigDir, mrggsave.dev = "pdf")
+```
+
+
+# Model details - Run number `r params$run`
+
+```{r modelDetails, echo = params$include_code, results = "asis"}
+mod <- read_model(here::here(thisModelPath))
+mod
+```
+
+```{r modelOutputSummary, echo = params$include_code, results = "asis"}
+sum <- mod %>% model_summary()
+sum
+```
+
+
+# Load Spec
+The aim is to use the information in the spec file to label the figures automatically.
+
+```{r yspec_details, echo = params$include_code}
+
+# Tell R where to find the yml
+specLo <- here::here("data", "spec", params$yspec)
+
+# load in the spec file
+spec <- ys_load(specLo) %>% ys_namespace("plot")
+
+```
+
+
+# Read in data
+Read in the model details using `read_model`. Details stored in the `mod` object can be 
+used to identify the location of the source data (used in $DATA) - to see how this is done
+look at the `bbr::get_data_path()` and `bbr::build_path_from_model()` helper functions. 
+
+After reading in the nonmem dataset and the output dataset they're joined by a `NUM` column. **This assumes that a row number column (called `NUM`) was included during data assembly.** The idea here is that in NONMEM, you table just `NUM` and none of the other input data items. They all will get joined back to the nonmem output ... even character columns.
+
+The `data` used in the diagnostic plots has been filtered to only include the observations 
+(i.e. `EVID==0`). Note that further modifications maybe needed, for example, if BLQ data was 
+included in the model or if the `DV` was log-transformed. The dataset also converts
+the categorical covariates of interest to factors using the `yspec_add_factors` function 
+and details described in the spec file.
+
+The `id` subset gets the first record per ID. This would usually be the baseline value
+but consider filtering on a baseline flag if available. Also, if the model includes
+inter-occassion variaibility (IOV), the occassion variable should be included within the `distinct` function. 
+
+```{r read_in_data, echo = params$include_code, message=FALSE}
+
+# Read in model
+mod <- read_model(here::here(thisModelPath))
+
+# This can now be done with bbr::nm_join() 
+# # Read in nonmem dataset - analysis3.csv
+# nm <- data.table::fread(file=bbr::get_data_path(mod), na.strings='.') %>% select(-DV)
+# # Read in table from nonmem run
+# tab <- PKPDmisc::read_nonmem(bbr::build_path_from_model(mod, ".tab"))
+# # join tab and nm using NUM
+# data0 <- left_join(tab, nm,  by="NUM")
+
+# Get original dataset and nonmem output
+data0 <- nm_join(mod)
+
+# filter to observation rows only
+data <- data0 %>% 
+  filter(EVID==0) %>% 
+  yspec_add_factors(spec, STUDY, CP, RF, DOSE, 
+                    .suffix = "")
+# filter to single row per ID and include factors 
+id <- distinct(data, ID, .keep_all=TRUE) 
+```
+
+
+# General diagnostic plots
+
+The following plots assume that the preferred x-axis labels are defined here. 
+
+```{r xAxis_label_names, echo = params$include_code}
+### Ideally get units from yaml
+xTIME <- glue(pm_axis_time(), xunit = parens(spec$TIME$unit))
+xTAD <- glue(pm_axis_tad(), xunit = parens(spec$TAD$unit))
+xPRED <-  glue(pm_axis_pred(), xname = params$drugNameUnits)
+```
+
+## DV vs PRED and IPRED 
+
+Create plots of DV vs PRED and IPRED for the full dataset and stratified by 
+renal function and hepatic function.
+
+```{r DV_PRED_plots, echo = params$include_code, message = FALSE}
+
+dvp <- dv_pred(data, yname = params$drugNameUnits)      # DV vs PRED 
+dvip <- dv_ipred(data, yname = params$drugNameUnits)   # DV vs IPRED 
+
+p <- dvp / dvip
+
+# DV vs PRED by renal function
+dvp_rf <-  dv_pred(data, yname = params$drugNameUnits, scales="free") +
+  facet_wrap(~RF, scales="free") + margin
+# DV vs IPRED by renal function
+dvip_rf <- dv_ipred(data, yname = params$drugNameUnits, scales="free") + 
+  facet_wrap(~RF, scales="free") + margin
+
+# DV vs PRED by hepatic function
+dvp_cp <- dv_pred(data, yname = params$drugNameUnits, scales="free") + 
+  facet_wrap(~CP, scales="free") + margin
+# DV vs IPRED by hepatic function
+dvip_cp <- dv_ipred(data, yname = params$drugNameUnits, scales="free") + 
+  facet_wrap(~CP, scales="free") + margin
+
+```
+
+```{r include_DV_PRED, eval = params$include_plots, include = params$include_plots, echo = F, message = FALSE}
+print("DV vs PRED and IPRED")
+p
+print("DV vs PRED and IPRED by renal function")
+dvp_rf ; dvip_rf
+print("DV vs PRED and by hepatic function")
+dvp_cp ; dvip_cp
+```
+
+```{r save_DV_PRED, include = FALSE, eval = params$run_mrggsave, message = FALSE}
+# the stem can be made using c() or glue syntax 
+mrggsave(p, 
+         stem = "{params$run}-dv-pred-ipred", 
+         width = 5, height = 7)
+
+mrggsave(list(dvp_rf, dvip_rf), 
+         stem = c(params$run, "dv-pred-ipred-by-rf"), 
+         width = 5, height = 5)
+
+mrggsave(list(dvp_cp, dvip_cp), 
+         stem = c(params$run, "dv-pred-ipred-by-cp"),
+         width = 5, height = 5)
+```
+
+```{r rm1, include = F}
+rm(p, dvp, dvip, dvp_rf, dvip_rf, dvp_cp, dvip_cp)
+```
+
+
+
+## NPDE plots
+
+NPDE vs PRED, time and time after dose.
+
+```{r NPDE_plots, echo = params$include_code, message = FALSE}
+##' Plan to display these three plots in a single, 3 panel figure and so the y-axis
+##' labels are removed manually for display purposes
+p1 <- npde_pred(data, x = xPRED, y = "NPDE //  ")
+p2 <- npde_time(data, x = xTIME)
+p3 <- npde_tad(data, x = xTAD, y = "NPDE //  ")
+
+p <- p1 / p2 / p3 
+```
+
+```{r include_NPDE, eval = params$include_plots, include = params$include_plots, echo = F, message = FALSE}
+p
+```
+
+```{r save_NPDE, include = FALSE, eval = params$run_mrggsave, message = FALSE}
+
+mrggsave(p,
+         stem = c(params$run, "npde-pred-time-tad"),
+         width = 5, height = 7)
+
+```
+
+```{r rm2, include = F}
+rm(p)
+```
+
+
+NPDE vs continuous covariates
+
+```{r NPDE_cont_cov_plots, echo = params$include_code, message = FALSE}
+NPDEco <- spec %>% 
+  ys_select(params$contCov) %>%      # select the covariates of interest
+  axis_col_labs(title_case = TRUE,   # converts yspec short to title_case 
+                short_max = 10) %>%  # if yspec short is >10 characters it keeps the abbreviation
+  as.list()
+
+pList = purrr::map(NPDEco, ~ npde_cont(data, x = .x))
+p = pList$AGE / pList$WT / pList$ALB / pList$EGFR
+```
+
+```{r include_NPDE_cont_cov, eval = params$include_plots, include = params$include_plots, echo = F, message = FALSE}
+p
+```
+
+```{r save_NPDE_cont_cov, include = FALSE, eval = params$run_mrggsave, message = FALSE}
+
+mrggsave(p, stem = c(params$run, "npde-cont-cov"),
+         width = 6, height = 7)
+
+```
+
+```{r rm2_cont_cov, include = F}
+rm(p, pList)
+```
+
+NPDE vs categorical covariates.
+
+```{r NPDE_cat_cov_plots, echo = params$include_code, message = FALSE}
+NPDEca <- spec %>% 
+  ys_select("RF", "CP") %>%             # select the covariates of interest
+  # ys_select(params$catCov) %>%        # this can be passed in params
+  axis_col_labs(title_case = TRUE) %>%  # converts yspec short to title_case 
+  as.list()
+
+
+pList = purrr::map(NPDEca, ~ npde_cat(data, x = .x))
+p = pList$RF / pList$CP
+```
+
+```{r include_NPDE_cat_cov, eval = params$include_plots, include = params$include_plots, echo = F, message = FALSE}
+p
+```
+
+```{r save_NPDE_cat_cov, include = FALSE, eval = params$run_mrggsave, message = FALSE}
+
+mrggsave(p, stem = c(params$run, "npde-cat-cov"),
+         width = 5, height = 7)
+
+```
+
+```{r rm2_cat_cov, include = F}
+rm(p, pList)
+```
+
+
+
+## NPDE density histogram
+
+```{r npde_hist_plots, echo = params$include_code, message = FALSE}
+p <- npde_hist(data)
+```
+
+```{r include_npde_hist, eval = params$include_plots, include = params$include_plots, echo = F, message = FALSE}
+p
+```
+
+```{r save_npde_hist, include = FALSE, eval = params$run_mrggsave, message = FALSE}
+mrggsave(p, stem = c(params$run, "npde-hist"),
+         width = 5, height = 5)
+```
+
+```{r rm3, include = F}
+rm(p)
+```
+
+
+
+## CWRES vs PRED, time and time after dose
+
+```{r cwres_plots, echo = params$include_code, message = FALSE}
+p1 <- cwres_pred(data, x = xPRED, y = "CWRES //  ") 
+p2 <- cwres_time(data, x = xTIME) 
+p3 <- cwres_tad(data, x = xTAD, y = "CWRES //  ")
+
+p = p1 / p2 / p3
+```
+
+```{r include_cwres, eval = params$include_plots, include = params$include_plots, echo = F, message = FALSE}
+p
+```
+
+```{r save_cwres, include = FALSE, eval = params$run_mrggsave, message = FALSE}
+mrggsave(p, stem = c(params$run, "cwres-pred-time-tad"),
+         width = 5, height = 7)
+```
+
+```{r rm_cwres, include = F}
+rm(p, p1, p2, p3)
+```
+
+
+
+## CWRES qq and density plot
+
+```{r qq_density_plots, echo = params$include_code, message = FALSE}
+# using patchwork to combine plots
+p <- cwres_q(data) / cwres_hist(data)
+```
+
+```{r include_qq_density, eval = params$include_plots, include = params$include_plots, echo = F, message = FALSE}
+p
+```
+
+```{r save_qq_density, include = FALSE, eval = params$run_mrggsave, message = FALSE}
+mrggsave(p, stem = c(params$run, "cwres-qq-hist"),
+         width = 5, height = 7)
+```
+
+```{r rm4, include = F}
+rm(p)
+```
+
+
+
+# EBEs-based diagnostics
+
+
+
+## ETA pairs plot 
+
+```{r eta_pairs_plots, echo = params$include_code, message = FALSE}
+p <- eta_pairs(id, params$etas)
+```
+
+```{r include_eta_pairs, eval = params$include_plots, include = params$include_plots, echo = F, message = FALSE}
+p
+```
+
+```{r save_eta_pairs, include = FALSE, eval = params$run_mrggsave, message = FALSE}
+mrggsave(p, stem = c(params$run, "eta-pairs"),
+         width = 5, height = 5)
+```
+
+```{r rm5, include = F}
+rm(p)
+```
+
+
+
+
+
+## Continuous covariate plots
+
+These plots uses the yspec to automatically rename the axis labels.
+
+```{r get_cont_cov_labels, echo = params$include_code, eval = params$run_mrggsave}
+
+co <- spec %>% 
+  ys_select(params$contCov) %>%     # select the covariates of interest
+  axis_col_labs(title_case = TRUE,  # converts yspec short to title_case 
+                short_max = 10)     # if yspec short is >10 characters it keeps the abbreviation
+
+```
+
+### ETA vs continous covariates
+
+Note that here we use a function that maps over the ETAs (not the covariates) because 
+the purpose of these plots was to determine whether there were any trends in 
+the covariates for a given ETA. This may need to be edited to address different study specific questions
+
+```{r eta_vs_cont_plots, echo = params$include_code, message = FALSE}
+p <- purrr::map(.x = params$etas, ~ map_wrap_eta_cont(.x, co, id))
+```
+
+```{r include_eta_vs_cont, eval = params$include_plots, include = params$include_plots, echo = F, message = FALSE}
+p
+```
+
+```{r save_eta_vs_cont, include = FALSE, eval = params$run_mrggsave, message = FALSE}
+mrggsave(p, stem = c(params$run, "eta-all-cont-cov"),
+         width = 5, height=5)
+```
+
+```{r rm6, include = F}
+rm(p)
+```
+
+### Continous covariate pairs plot
+
+```{r contCov_pairs_plots, echo = params$include_code, message = FALSE}
+# need to manually force units onto a new line for EGFR here to fit label in the panel
+co2 <- co
+if("EGFR" %in% params$contCov){
+  co2["EGFR"] = "EGFR//EGFR \n(ml/min/1.73m2)"
+}
+p <- eta_pairs(id, co2)
+```
+
+```{r include_contCov_pairs, eval = params$include_plots, include = params$include_plots, echo = F, message = FALSE}
+p
+```
+
+```{r save_contCov_pairs, include = FALSE, eval = params$run_mrggsave, message = FALSE}
+mrggsave(p, stem = c(params$run, "eta-all-cont-cov-pairs"),
+         width = 5, height=6)
+```
+
+```{r rm7, include = F}
+rm(p)
+```
+
+
+## Categorical covariate plots
+
+These plots uses the yspec to automatically rename the axis labels.
+
+```{r get_cat_cov_labels, echo = params$include_code, eval = params$run_mrggsave}
+
+ca <- spec %>% 
+  ys_select(params$catCov) %>%   # select the covariates of interest
+  axis_col_labs(title_case=TRUE)  # converts yspec short to title_case 
+
+```
+
+
+### ETA vs categorical covariates
+
+Note that here we use a function that maps over the covariates (not the ETAs) because 
+the purpose of these plots was to determine whether there is any difference in the 
+distribution of ETAs across studies, dosing groups and disease states.
+This should be updated to reflect the questions you're trying to address.
+
+
+```{r eta_vs_cat_plots, echo = params$include_code, message = FALSE}
+if (length(params$etas) > 1) {
+  p <- purrr::map(.x = ca, ~ map_eta_cat(.x, params$etas, id)) 
+} else {
+  ## CHECK: depending on the labels, this may need to be changed 
+  p <- purrr::map(.x = ca, ~ eta_cat(id, .x, params$etas) + rot_x(45)) 
+}
+```
+
+```{r include_eta_vs_cat, eval = params$include_plots, include = params$include_plots, echo = F, message = FALSE}
+p
+```
+
+```{r save_eta_vs_cat, include = FALSE, eval = params$run_mrggsave, message = FALSE}
+mrggsave(p, stem = c(params$run, "eta-all-cat-cov"),
+         width = 6, height = 7)
+```
+
+
+# Session details
+
+It is considered good practice to include these details at the end of all rmd scripts
+
+```{r details, include = TRUE}
+Sys.getenv("AMI_NAME")
+sessioninfo::session_info()
+bbr::bbi_version()
+```
+
+

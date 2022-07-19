@@ -1,0 +1,26 @@
+\setlength{\tabcolsep}{5pt} 
+\begin{threeparttable}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}[h]{lcccccc}
+\hline
+\multicolumn{1}{c}{} & \multicolumn{4}{c}{Number} & \multicolumn{2}{c}{Percent} \\
+\cmidrule(lr){2-5}
+\cmidrule(lr){6-7}
+Study & SUBJ & MISS & OBS & BLQ & OBS & BLQ \\
+\hline
+101-DEMO-001 & 30 & 0 & 424 & 26 & 13.2 & 0.8 \\
+101-DEMO-002 & 50 & 0 & 1199 & 1 & 37.4 & 0.0 \\
+201-DEMO-003 & 40 & 0 & 960 & 0 & 29.9 & 0.0 \\
+201-DEMO-004 & 40 & 0 & 559 & 41 & 17.4 & 1.3 \\
+\hline \hline {\bf All data} & 160 & 0 & 3142 & 68 & 97.9 & 2.1 \\
+\hline
+\end{tabular}
+\begin{tablenotes}[flushleft]
+\item SUBJ: subjects
+\item BLQ: below limit of quantification
+\item MISS: missing observations (non-BLQ)
+\item OBS: observations
+\item Source code: eda-tables.R
+\item Source file: pk-data-sum.tex
+\end{tablenotes}
+\end{threeparttable}

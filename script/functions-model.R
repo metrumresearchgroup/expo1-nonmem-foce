@@ -84,3 +84,31 @@ compare_ofv <- function(models, log_df, ...) {
     knitr::kable()
 }
 
+#' HTML formatting for tags in run log
+#' 
+#' Returns the input tibble, with an extra column `tags_diff` that contains any
+#' tags _added_ to a given model (as compared to its parent model) and any tags
+#' _removed_ with a strikethrough.
+#' @param .log_df The tibble returned from `run_log() %>% add_tags_diff()`
+#' @param .keep Whether to keep the `tags_added` and `tags_removed` columns from `add_tags_diff()`
+format_tags_diff <- function(.log_df, .keep = FALSE) {
+  if (
+    !any(str_detect(names(.log_df), "tags_added")) ||
+    !any(str_detect(names(.log_df), "tags_removed"))
+  ) {
+    stop("Must have both `tags_added` and `tags_removed` columns to call `format_tags_diff()`. Use `add_tags_diff()` to create them")
+  }
+  .log_df <- bbr::suppressSpecificWarning(
+    collapse_to_string(.log_df, tags_added, tags_removed),
+    .regexpr = "collapse_to_string\\(\\) only works on list columns"
+  ) %>%
+    mutate(
+      tags_diff = paste0(tags_added, "; ~~", tags_removed, "~~") %>% 
+        str_replace("; ~~~~","") %>% 
+        str_replace("^; ", "")
+    )
+  if (isFALSE(.keep)) {
+    .log_df <- select(.log_df, -tags_added, -tags_removed)
+  }
+  return(.log_df)
+}

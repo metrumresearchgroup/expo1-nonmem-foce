@@ -44,7 +44,7 @@ log_df <- run_log(MODEL_DIR, .recurse = FALSE) %>%
 check_up_to_date(log_df)
 
 # check if any rogue tags that aren't in tags.yaml (from functions-model.R)
-tags_ok <- audit_tags(log_df)
+tags_ok <- audit_tags(log_df, yaml::read_yaml(here::here("script", "tags.yaml")))
 if (all(tags_ok)) cat("All tags are valid.\n")
 ```
 
@@ -64,8 +64,8 @@ _Optionally view the tags that were added or removed for each model._
 # format log_df for display
 log_df %>% 
   add_tags_diff() %>%
-  collapse_to_string(tags) %>%
-  select(run, based_on, tags, tags_added, tags_removed) %>%
+  format_tags_diff() %>%
+  select(run, based_on, description, tags, tags_diff) %>%
   knitr::kable()
 ```
 

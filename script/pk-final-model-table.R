@@ -44,7 +44,7 @@ param_df <- sum  %>%
   defineRows() %>%            # define series of T/F variables
   getValueSE() %>%            # define which value and se are required
   get95CI() %>%               # get upper/lower ci - determined using the SE and estimate
-  formatValues() %>%          # back transform as needed, round using'sig' and combine columns where needed
+  formatValues() %>%          # back transform as needed, round using 'sig' and combine columns where needed
   formatGreekNames() %>%      # format the labels to display greek symbols
   getPanelName() %>%          # Define panel names based on parameter type
   dplyr::select(type, abb, greek, desc, value, ci, shrinkage) %>%  # select columns of interest

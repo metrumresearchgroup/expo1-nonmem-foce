@@ -72,8 +72,7 @@ param_df
 
 boot_df <- bootParam %>%
   left_join(sum %>% 
-              param_estimates() %>% 
-              mutate(name = gsub("[[:punct:]]", "", parameter_names)) %>% select(parameter_names, fixed), 
+              param_estimates() %>% select(parameter_names, fixed), 
             by = "parameter_names") %>% 
   mutate(value = estimate) %>% 
   checkTransforms() %>%       # check for associated THETAs (e.g. for logit transformations)

@@ -19,7 +19,7 @@ library(mrggsave)
 library(future)
 library(future.apply)
 library(data.table)
-library(PKPDmisc)
+library(mrgmisc)
 library(bbr)
 library(here)
 

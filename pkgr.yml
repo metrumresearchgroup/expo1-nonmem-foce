@@ -43,7 +43,7 @@ Packages:
   - mrggt
   - data.table
   - pmtables
-  - PKPDmisc
+  - mrgmisc
   - sessioninfo
   - texPreview
   - diffobj
@@ -52,7 +52,7 @@ Packages:
   - nhanesA
 
 Repos:
-  - MPN: https://mpn.metworx.com/snapshots/stable/2022-06-15
+  - MPN: https://mpn.metworx.com/snapshots/stable/2023-01-25
 
 
 Lockfile:

@@ -19,7 +19,7 @@ library(yaml)
 library(yspec)
 library(pmplots)
 library(mrggsave)
-library(PKPDmisc)
+library(mrgmisc)
 library(here)
 library(data.table)
 

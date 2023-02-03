@@ -51,7 +51,7 @@ knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE,
 library(tidyverse) 
 library(pmplots)
 library(bbr)
-library(PKPDmisc)
+library(mrgmisc)
 library(yaml)
 library(yspec)
 library(mrggsave)

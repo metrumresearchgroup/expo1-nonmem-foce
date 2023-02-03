@@ -22,7 +22,7 @@ The output of this script will be read and used by [forestPlots.Rmd](forestPlots
 library(tidyverse)
 library(magrittr)
 library(mrgsolve)
-library(PKPDmisc)
+library(mrgmisc)
 library(grid)
 library(bbr)
 library(glue)

@@ -17,7 +17,7 @@ library(data.table)
 library(bbr)
 library(tidyverse)
 library(glue)
-library(PKPDmisc)
+library(mrgmisc)
 library(whisker)
 
 #' # Preprocessing

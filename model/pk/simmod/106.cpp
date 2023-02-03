@@ -1,89 +1,57 @@
-// $GLOBAL
-// #define CP (CENT/VC)
-// #define CT (PERIPH/VP)
+[ SET ] delta = 0.5
 
-
-  
-$PROB 
-- Author: APerson
-- Client: ACompany
+[ PROB ] 
 - Date: `r Sys.Date()`
 - NONMEM Run: 106
 - Structure: two compartment, linear CL, IV.
-- Implementation: ODE
 - Error model: Proportional 
-// - Covariates:
-// -- CL - WT, CRCL, ALB,AGE.
-// -- VC - WT
-// -- Q - WT
-// -- VP - WT
-// - Random effects on: `CL`, `VC`, `KA`
+
+- Covariates
+  - CL  WT, CRCL, ALB,AGE.
+  - VC  WT
+  - Q   WT
+  - VP  WT
+  
+- Random effects on
+  - CL
+  - V2 
+  - KA
+
+This model requires mrgsolve >= 1.0.3
+
+[ PLUGIN ] autodec nm-vars
 
 [ PKMODEL ] cmt = "GUT CENT PERIPH", depot = TRUE
 
 [ PARAM ]  
-WT=70.9, AGE=33.8,CRCL = 88.7, ALB=4.3
+WT = 70.9, AGE = 33.8, EGFR = 88.7, ALB = 4.3
 
-$NMXML
+[ NMEXT ] 
 project = ".."
 root = "cppfile"
 run = 106 //should this be changed since it is based on multiple nonmem ctl
 
+[ PK ]
+V2WT   = LOG(WT/70.0);
+CLWT   = LOG(WT/70.0)*0.75;
+CLEGFR = LOG(CRCL/90.0)*THETA(6);
+CLAGE  = LOG(AGE/35.0)*THETA(7);
+V3WT   = LOG(WT/70.0);
+QWT    = LOG(WT/70.0)*0.75;
+CLALB  = LOG(ALB/4.5)*THETA(8);
 
-// $ODE
-// dxdt_GUT = -KA*GUT;
-// dxdt_CENT = KA*GUT - (CL+Q)*CP  + Q*CT;
-// dxdt_PERIPH = Q*CP - Q*CT;
+KA   = EXP(THETA(1) + ETA(1));
+V2   = EXP(THETA(2) + V2WT + ETA(2));
+CL   = EXP(THETA(3) + CLWT + CLCR + CLAGE + CLALB + ETA(3));
+V3   = EXP(THETA(4) + V3WT);
+Q    = EXP(THETA(5) + QWT);  
 
-//double
-    
+S2 = V2/1000.0; //; dose in mcg, conc in mcg/mL
 
-$MAIN
-
-double V2WT  = log(WT/70);
-double CLWT  = log(WT/70)*0.75;
-double CLCR = log(CRCL/90)*THETA6;
-double CLAGE = log(AGE/35)*THETA7;
-double V3WT  = log(WT/70);
-double QWT   = log(WT/70)*0.75;
-double CLALB = log(ALB/4.5)*THETA8;
-
-double  KA   = exp(THETA1+ETA(1));
-double  V2   = exp(THETA2+V2WT+ETA(2));
-double  CL   = exp(THETA3+CLWT+CLCR+CLAGE+CLALB+ETA(3));
-double  V3   = exp(THETA4+V3WT);
-double  Q    = exp(THETA5+QWT);  
-
-double S2    = V2/1000; //; dose in mcg, conc in mcg/mL
-  
-  
-
-
-
-// $INIT 
-//   GUT = 0
-//   CENT  = 0 
-//   PERIPH  = 0  
-  
-$SET delta=0.5
-
-
-
-[ TABLE ] 
-double F = CENT/S2;
-double Y=F*(1+EPS(1)); 
-capture IPRED=F; 
+[ ERROR ] 
+F = CENT/S2;
+Y = F*(1+EPS(1)); 
+IPRED = F; 
 
 [ CAPTURE ]
 CL Q V2 V3 KA ETA(1) ETA(2) ETA(3) IPRED
-
-// $TABLE
-//
-// capture DV = CP*(1 +EPS(1)) ;
-// capture CLI = CL;
-// capture CPI = CP;
-// 
-// 
-// $CAPTURE @annotated 
-// CP : Plasma concentration (mass/volume)
-// VCI= VC: Central Volume

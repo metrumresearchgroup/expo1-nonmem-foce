@@ -43,7 +43,7 @@ knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE,
 suppressPackageStartupMessages(library(tidyverse)) 
 library(pmplots)
 library(bbr)
-library(PKPDmisc)
+library(mrgmisc)
 library(yaml)
 library(yspec)
 library(mrggsave)
@@ -155,7 +155,7 @@ mod <- read_model(here::here(thisModelPath))
 # # Read in nonmem dataset - analysis3.csv
 # nm <- data.table::fread(file=bbr::get_data_path(mod), na.strings='.') %>% select(-DV)
 # # Read in table from nonmem run
-# tab <- PKPDmisc::read_nonmem(bbr::build_path_from_model(mod, ".tab"))
+# tab <- mrgmisc::read_nonmem(bbr::build_path_from_model(mod, ".tab"))
 # # join tab and nm using NUM
 # data0 <- left_join(tab, nm,  by="NUM")
 

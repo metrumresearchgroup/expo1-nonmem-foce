@@ -24,6 +24,9 @@ MODEL_DIR <- "../model/pk"
 TAGS <- yaml::read_yaml("tags.yaml")
 
 
+
+
+
 ############################################
 # CHECK FOR BBI INSTALLATION AND CONFIG 
 ############################################
@@ -48,7 +51,7 @@ file.path(MODEL_DIR, "bbi.yaml") %>% yaml::read_yaml() %>% names()
 
 bbi_init(.dir = MODEL_DIR,            # the directory to create the bbi.yaml in
          .nonmem_dir = "/opt/NONMEM", # location of NONMEM installation
-         .nonmem_version = "nm74gf")  # default NONMEM version to use
+         .nonmem_version = "nm75")  # default NONMEM version to use
 
 # Note this only needs to be done _once for each folder_ you are modeling in. Once the bbi.yaml exists, 
 # you will not need to run `bbi_init()` again unless you want to create another one; for example if you 
@@ -56,6 +59,23 @@ bbi_init(.dir = MODEL_DIR,            # the directory to create the bbi.yaml in
 #
 # For more details on the `bbi.yaml` file and its usage, see:
 # https://metrumresearchgroup.github.io/bbr/articles/getting-started.html#bbi-yaml-configuration-file
+
+
+x <- formatC(seq(100, 106), width = 3, flag = "0")
+runs <- paste0(here("model/pk/"), x)
+args <- list(overwrite = TRUE)
+mods <- lapply(runs, read_model)
+
+submit_models(mods, .bbi_args=args)
+
+
+
+
+
+
+
+
+
 
 
 

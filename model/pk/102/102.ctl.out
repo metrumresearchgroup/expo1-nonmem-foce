@@ -7,9 +7,9 @@ Recompiling certain components
 Building NONMEM Executable
 Starting nonmem execution ...
 License Registered to: Metrum Research Group (with RADAR5NM)
-Expiration Date:    14 JUL 2022
-Current Date:        4 JAN 2022
-Days until program expires : 190
+Expiration Date:    14 JUL 2023
+Current Date:       31 JAN 2023
+Days until program expires : 163
 
 
  First Order Conditional Estimation with Interaction
@@ -285,8 +285,8 @@ Days until program expires : 190
             -4.1271E-01 -1.2614E-02
  GRADIENT:   9.9917E-03  4.8371E+00 -1.0299E+00  9.1590E-01  3.5115E-01  1.3836E-02  5.4776E-03 -4.8929E-03  3.6208E-02  1.0196E-03
              3.3786E-02  9.1662E-02
- Elapsed estimation  time in seconds:    25.74
- Elapsed covariance  time in seconds:    16.98
- Elapsed postprocess time in seconds:     2.51
- Elapsed finaloutput time in seconds:     0.41
+ Elapsed estimation  time in seconds:    23.19
+ Elapsed covariance  time in seconds:    15.61
+ Elapsed postprocess time in seconds:     1.90
+ Elapsed finaloutput time in seconds:     0.97
 Done with nonmem execution

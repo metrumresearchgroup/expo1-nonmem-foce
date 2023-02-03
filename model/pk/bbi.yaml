@@ -17,10 +17,13 @@ nonmem:
     executable: nmfe74
     home: /opt/NONMEM/nm74gf
     nmqual: yes
-    default: yes
   nm74gf_nmfe:
     executable: nmfe74
     home: /opt/NONMEM/nm74gf_nmfe
+  nm75:
+    executable: nmfe75
+    home: /opt/NONMEM/nm75
+    default: yes
 output_dir: '{{ .Name }}'
 parallel: no
 parallel_timeout: 2147483647

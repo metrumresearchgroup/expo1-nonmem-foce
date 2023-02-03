@@ -31,7 +31,7 @@ cat("## Run log")
 # create the raw run log
 MODEL_DIR <- "../model/pk"
 
-log_df <- run_log(MODEL_DIR, .recurse = FALSE) %>% 
+log_df <- run_log(MODEL_DIR) %>% 
       add_config() %>%
       add_summary()
 ```
@@ -124,10 +124,9 @@ compare_ofv(102:104, log_df, notes)
 # filter the run log to only models with this covariate tag
 TAGS <- yaml::read_yaml("tags.yaml")
 
-log_df %>% 
-  filter(map_lgl(tags, ~ TAGS$cov_cl_egfr %in% .x)) %>%
-  collapse_to_string(tags) %>%
-  select(run, tags, ofv, param_count, condition_number) %>%
+run_log(MODEL_DIR, .include = TAGS$cov_cl_egfr) %>% 
+  add_summary() %>%
+  select(run, ofv, param_count, condition_number) %>%
   knitr::kable()
 ```
 
@@ -135,9 +134,8 @@ log_df %>%
 
 ```{r}
 log_df %>% 
-  filter(!is.na(description)) %>%
-  collapse_to_string(tags) %>%
-  select(run, description, tags, ofv, param_count) %>%
+  filter(star) %>%
+  select(run, description, ofv, param_count) %>%
   knitr::kable()
 ```
 

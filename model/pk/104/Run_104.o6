@@ -1,0 +1,9 @@
+time="2023-01-31T09:54:32-05:00" level=info msg="Successfully loaded default configuration from /data/home/sethg/example-projects/bbr-nonmem-poppk-foce/model/pk/104/bbi.yaml"
+time="2023-01-31T09:54:32-05:00" level=info msg="Beginning Local Path"
+time="2023-01-31T09:54:32-05:00" level=info msg="A total of 1 models have completed the initial preparation phase"
+time="2023-01-31T09:54:32-05:00" level=info msg="[104] Beginning local work phase"
+time="2023-01-31T09:56:03-05:00" level=info msg="[104] Beginning cleanup phase"
+time="2023-01-31T09:56:11-05:00" level=info msg="[104] Cleanup completed"
+time="2023-01-31T09:56:11-05:00" level=info msg="Waiting for any post execution hooks to finish"
+time="2023-01-31T09:56:11-05:00" level=info msg="\r1 models completed in 1m39.014609854s"
+

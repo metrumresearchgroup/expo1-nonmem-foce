@@ -19,7 +19,7 @@ library(mrggsave)
 library(vpc)
 library(bbr)
 library(here)
-source("functions-model.R")
+source(here("script/functions-model.R"))
 
 options(mrggsave.dir = here("deliv/figure"), mrg.script = "pk-pcvpc-final.R")
 options(mrgsolve.project = here("script/model"))

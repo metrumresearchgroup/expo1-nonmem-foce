@@ -42,7 +42,7 @@ knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE,
 suppressPackageStartupMessages(library(tidyverse))
 library(pmplots)
 library(bbr)
-library(PKPDmisc)
+library(mrgmisc)
 library(yaml)
 library(yspec)
 library(mrggsave)
@@ -64,7 +64,7 @@ thisScript <- params$script
 options(mrg.script = params$script)
 options("mrggsave.dev" = "pdf")
 margin <- theme(plot.margin = unit(c(0.2, 0.2, 0.1, 0.1), "in"))
-parens <-  pmtables::ensure_parens
+parens <- yspec:::parens
 ```
 
 
@@ -179,7 +179,7 @@ Create plots of DV, PRED and IPRED vs time (linear and log scale) for the full d
 
 dv_pred_ipred_time_linear = data %>% 
   dv_pred_ipred(
-    # facets = c("STUDY", "ID"), # option coming soon in pmplots
+    facets = c("STUDY", "ID"), 
     id_per_plot = 9,
     ncol = 3,
     xlab = xTIME,
@@ -190,7 +190,7 @@ dv_pred_ipred_time_linear = data %>%
 
 dv_pred_ipred_time_log = data %>% 
   dv_pred_ipred(
-    # facets = c("STUDY", "ID"), # option coming soon in pmplots
+    facets = c("STUDY", "ID"), 
     id_per_plot = 9,
     ncol = 3,
     xlab = xTIME,
@@ -236,7 +236,7 @@ Create plots of DV, PRED and IPRED vs TAD (linear and log scale) for the full da
 
 dv_pred_ipred_tad_linear = data %>% 
   dv_pred_ipred(
-    # facets = c("STUDY", "ID"), # option coming soon in pmplots
+    facets = c("STUDY", "ID"), 
     x = pm_axis_tad(),
     id_per_plot = 9,
     ncol = 3,
@@ -248,7 +248,7 @@ dv_pred_ipred_tad_linear = data %>%
 
 dv_pred_ipred_tad_log = data %>% 
   dv_pred_ipred(
-    # facets = c("STUDY", "ID"), # option coming soon in pmplots
+    facets = c("STUDY", "ID"), 
     x = pm_axis_tad(),
     id_per_plot = 9,
     ncol = 3,

@@ -1,6 +1,10 @@
 [ prob ]
 106-104 + COV-effects(CRCL, AGE) on CL
 
+This model requires mrgsolve >= 1.0.3
+
+[ plugin ] autodec nm-vars
+
 [ pkmodel ] cmt = "GUT,CENT,PERIPH", depot = TRUE
 
 [ param ] 
@@ -13,23 +17,25 @@ AGE  = 35
 path = "../../model/pk/106/106.xml"
 root = "cppfile"
 
-[ main ] 
-double V2WT   = log(WT/70);
-double CLWT   = log(WT/70)*0.75;
-double CLEGFR = log(EGFR/90)*THETA6;
-double CLAGE  = log(AGE/35)*THETA7;
-double V3WT   = log(WT/70);
-double QWT    = log(WT/70)*0.75;
-double CLALB  = log(ALB/4.5)*THETA8;
+[ pk ] 
+V2WT   = LOG(WT/70.0);
+CLWT   = LOG(WT/70.0)*0.75;
+CLEGFR = LOG(EGFR/90.0)*THETA(6);
+CLAGE  = LOG(AGE/35.0)*THETA(7);
+V3WT   = LOG(WT/70.0);
+QWT    = LOG(WT/70.0)*0.75;
+CLALB  = LOG(ALB/4.5)*THETA(8);
 
-double KA  = exp(THETA1+ETA(1));
-capture V2  = exp(THETA2+V2WT+ETA(2));
-capture CL  = exp(THETA3+CLWT+CLEGFR+CLAGE+CLALB+ETA(3));
-double V3  = exp(THETA4+V3WT);
-double Q   = exp(THETA5+QWT);
+KA  = EXP(THETA(1) + ETA(1));
+V2  = EXP(THETA(2) + V2WT + ETA(2));
+CL  = EXP(THETA(3) + CLWT + CLEGFR + CLAGE + CLALB + ETA(3));
+V3  = EXP(THETA(4) + V3WT);
+Q   = EXP(THETA(5) + QWT);
 
-double S2 = V2/1000; //; dose in mcg, conc in mcg/mL
+S2 = V2/1000.0; //; dose in mcg, conc in mcg/mL
 
-[ table ] 
-capture IPRED = CENT/S2;
-capture Y = IPRED * (1+EPS(1));
+[ error ] 
+IPRED = CENT/S2;
+Y = IPRED * (1+EPS(1));
+
+[ capture ] CL V2 IPRED Y

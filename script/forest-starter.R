@@ -6,6 +6,8 @@ library(tidyr)
 library(forcats)
 library(here)
 
+set.seed(11010)
+
 nfact <- function(x, suffix = "", prefix = "") {
   ux <- sort(unique(x))
   factor(x, levels = ux, labels = paste0(prefix, ux, suffix))
@@ -49,7 +51,6 @@ data <- mutate(
 
 mod <- mread("106.mod", project = here("script/model"))
 see(mod)
-set.seed(11010)
 out <- mrgsim(mod, data, end = -1, recover = "dose1,dose2,RF,EGFR", output = "df")
 
 out1 <- mutate(

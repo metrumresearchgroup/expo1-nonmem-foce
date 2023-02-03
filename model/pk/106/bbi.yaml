@@ -3,7 +3,7 @@ overwrite: false
 clean_lvl: 1
 copy_lvl: 0
 git: true
-bbi_binary: /data/apps/bbi
+bbi_binary: ""
 save_config: false
 output_dir: '{{ .Name }}'
 threads: 1
@@ -25,12 +25,17 @@ nonmem:
     home: /opt/NONMEM/nm74gf
     executable: nmfe74
     nmqual: true
-    default: true
+    default: false
   nm74gf_nmfe:
     home: /opt/NONMEM/nm74gf_nmfe
     executable: nmfe74
     nmqual: false
     default: false
+  nm75:
+    home: /opt/NONMEM/nm75
+    executable: nmfe75
+    nmqual: false
+    default: true
 parallel: false
 delay: 0
 nmqual: false

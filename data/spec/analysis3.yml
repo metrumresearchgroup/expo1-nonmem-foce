@@ -51,6 +51,7 @@ BMI:
   unit: kg/m2
   unit.tex: "kg/m<<super2>>"
 SEX: 
+  short: sex
   values: {male: 0, female: 1}
 AAG:
   short: alpha-1-acid glycoprotein

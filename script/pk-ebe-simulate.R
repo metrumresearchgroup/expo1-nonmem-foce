@@ -7,7 +7,7 @@
 library(tidyverse)
 library(mrgsolve)
 library(bbr)
-library(PKPDmisc)
+library(mrgmisc)
 library(pmtables)
 library(data.table)
 library(yspec)

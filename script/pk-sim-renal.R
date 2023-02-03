@@ -3,7 +3,7 @@ theme_set(theme_bw())
 library(mrgsolve)
 library(data.table)
 library(haven)
-library(PKPDmisc)
+library(mrgmisc)
 library(pmplots)
 library(pmforest)
 library(mrggsave)
@@ -271,7 +271,7 @@ if (isTRUE(RUN_SIMS)) {
   #Iteratively resample populations and simulate with uncertainty
   set.seed(05302021)
   simresIIVJul17 <- future_map(
-    PKPDmisc::chunk_df(boot, run, .nchunks = 16),.options = opt,
+    mrgmisc::chunk_df(boot, run, .nchunks = 16),.options = opt,
     function(.chunk){
       map_dfr(
         .chunk$run, 

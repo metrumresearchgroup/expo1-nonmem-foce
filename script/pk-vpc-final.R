@@ -43,7 +43,14 @@ mrg_vpc_theme = new_vpc_theme(list(
 #' original study.
 #' 
 runno <- 106
-data <- nm_join(here("model/pk/106"))
+
+#' 
+#' Using the `.superset = TRUE` argument here to get the complete data; don't 
+#' forget to filter out other records that may have been ignored in the run. 
+#' 
+data <- nm_join(here("model/pk/106"), .superset = TRUE)
+data <- filter(data, is.na(C))
+
 spec <- ys_load(here("data/spec/analysis3.yml"))
 spec <- ys_namespace(spec, "long")
 lab <- ys_get_short_unit(spec, parens = TRUE, title_case = TRUE)
@@ -90,9 +97,13 @@ sims <- lapply(
 sum(sims$Y)
 
 #' Filter both the observed and simulated data
+#' For the observed data, we only want actual observations that weren't BLQ
+#' For the simulated data, we take simulated observations that were above LQ
 fsad_mad <-  filter(sad_mad,  EVID==0, BLQ ==0)
-fsims <- filter(sims, EVID==0, Y  >= 10)
+fsims <- filter(sims, EVID==0, Y >= 10)
 
+#' This will dose-normalize the concentrations so we can put them all on 
+#' the same plot
 fsad_mad <-  mutate(fsad_mad,  DVN = DV/DOSE)
 fsims <- mutate(fsims, YN = Y/DOSE)
 
@@ -137,7 +148,7 @@ sum(rf_sims$Y)
 
 #' Filter both the observed and simulated data
 f_rf_data <- filter(rf_data, EVID==0, BLQ ==0)
-f_rf_sims <- filter(rf_sims, EVID==0, Y  >= 10)
+f_rf_sims <- filter(rf_sims, EVID==0, Y >= 10)
 
 f_rf_data <- mutate(f_rf_data, DVN = DV/DOSE)
 f_rf_sims <- mutate(f_rf_sims, YN  = Y/DOSE)
@@ -180,7 +191,7 @@ sum(cp_sims$Y)
 
 #' Filter both the observed and simulated data
 f_cp_data <- filter(cp_data, EVID==0, BLQ ==0)
-f_cp_sims <- filter(cp_sims, EVID==0, Y  >= 10)
+f_cp_sims <- filter(cp_sims, EVID==0, Y >= 10)
 
 f_cp_data <- mutate(f_cp_data, DVN = DV/DOSE)
 f_cp_sims <- mutate(f_cp_sims, YN  = Y/DOSE)

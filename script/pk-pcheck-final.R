@@ -35,9 +35,11 @@ options(mrggsave.dir = here("deliv/figure"), mrg.script = "pk-pcheck-final.R")
 #' 
 
 #' 
-#' The (full) analysis data set
-#' 
-data <- nm_join(here("model/pk/106"))
+#' The (full) analysis data set; we get this using the `.superset = TRUE` 
+#' argument
+data <- nm_join(here("model/pk/106"), .superset = TRUE)
+data <- filter(data, is.na(C))
+
 spec <- ys_load(here("data/spec/analysis3.yml"))
 lab <- ys_get_short_unit(spec, parens = TRUE)
 
@@ -79,7 +81,7 @@ sims <- future_lapply(
     future.seed = TRUE
   ) %>% bind_rows()
 
-#' Get single-dose' 
+#' Metrics for summaries
 pct <- list(lo = 0.1, median = 0.5, hi = 0.9)
 metrics <- names(pct)
 labels <- c("10th percentile", "median", "90th percentile")
@@ -103,12 +105,12 @@ smrize <- function(x) {
 #' Filter:
 single <- 
   sims %>% 
-  filter(Y >= 10, STUDYN %in% c(1,4), TIME <= 96) %>% 
+  filter(Y >= 10, STUDYN %in% c(1,4), TIME <= 96, EVID==0) %>% 
   as.data.table()
 
 obs <- 
   data %>% 
-  filter(BLQ ==0, STUDYN %in% c(1,4), TIME <= 96) %>% 
+  filter(BLQ ==0, STUDYN %in% c(1,4), TIME <= 96, EVID==0) %>% 
   as.data.table()
 
 ggplot(obs, aes(TIME,DV,group=ID)) + geom_line() + facet_wrap(~STUDY)
@@ -132,7 +134,7 @@ auc_sims <- mutate(auc_sims, name = metricf(name))
 #' Plot
 cont_hist(auc_sims, x = "value", bins = 23, alpha = 0.5) + 
   facet_grid(STUDY~name, scales = "free_x") + 
-  geom_vline(data = auc_obs_summ, aes(xintercept = value), col = "blue3", lwd = 1.5) + 
+  geom_vline(data = auc_obs_summ, aes(xintercept = value), col = "blue3", linewidth = 1.5) + 
   xlab("Dose-normalized AUC (ng*hr/ml/mg)")
 
 mrggsave_last(tag = "auc-pcheck", height = 6)
@@ -146,20 +148,22 @@ mrggsave_last(tag = "auc-pcheck", height = 6)
 #' 
 sims_cmin <- filter(sims, STUDYN  %in% c(2,3), TIME > 116, TIME <= 130, EVID==0)
 obs_cmin  <- filter(data, STUDYN  %in% c(2,3), TIME > 116, TIME <= 130, EVID==0)
+
+#' Censor 
 sims_cmin <- mutate(sims_cmin, Y = ifelse(Y < 10, NA_real_, Y))
 obs_cmin <- mutate(obs_cmin, DV = ifelse(BLQ == 1, NA_real_, DV))
 
 #' Get the dose-normalized observed Cmin
 omin <- 
   obs_cmin %>%
-  filter(!is.na(DV)) %>%
+  filter(!is.na(DV)) %>% # drop?
   group_by(ID,DOSE,RF) %>%
   summarise(Cmin_obs = min(DV/DOSE), .groups = "drop")
 
 #' Get the dose-normalized simulated Cmin
 smin <- 
   sims_cmin %>%
-  filter(!is.na(Y)) %>%
+  filter(!is.na(Y)) %>% # drop?
   group_by(irep,ID,DOSE,RF) %>%
   summarise(Cmin = min(Y/DOSE), .groups = "drop") 
 
@@ -196,6 +200,6 @@ ggplot(cmin_sort, aes(Cmin_obs,Cmin,group=irep)) +
   geom_vline(data = spikes_long, aes(xintercept = value, group = name),lty=2) + 
   xlab("Observed dose-normalized Cmin (ng/mL/mg)") + 
   ylab("Simulated dose-normalized Cmin (ng/mL/mg)") + 
-  geom_abline(intercept=0, slope=1, lwd=1.5, col = "blue3")
+  geom_abline(intercept=0, slope=1, linewidth=1.5, col = "blue3")
 
 mrggsave_last(tag = "cmin-pcheck", height = 6)

@@ -29,22 +29,31 @@ mrg_vpc_theme = new_vpc_theme(list(
   sim_median_fill = "grey60", sim_median_alpha = 0.5
 ))
 
-#' # Data
-
-#' The (full) analysis data set
-runno <- 106
 spec <- ys_load(here("data/spec/analysis3.yml"))
 lab <- ys_get_short_unit(spec, parens = TRUE, title_case = TRUE)
 
-#' # Simulate the vpc
 #' 
-#' ## Load the mrgsolve model
+#' # Model
 #' 
+runno <- 106
+
 #' This should reflect `../model/pk/106.ctl`
 mod <- mread(glue("{runno}.mod"))
 
-#' The returns only the data that were analyzed
-data <- nm_join(glue(here("model/pk/{runno}")))
+#' 
+#' # Data
+#' This returns the complete data set by passing `.superset = TRUE`
+#' 
+data <- nm_join(glue(here("model/pk/{runno}")), .superset = TRUE)
+data <- filter(data, is.na(C))
+
+#' Simulate `PRED` for the records that are BLQ, otherwise we'll use the 
+#' value coming from NONMEM
+anyNA(data$PRED) # TRUE
+out <- mrgsim(zero_re(mod), data, digits = 5)
+data <- mutate(data, PRED = ifelse(BLQ > 0, out$Y, PRED))
+anyNA(data$PRED) # FALSE
+
 
 #' # Set up the simulation
 #' 
@@ -72,8 +81,10 @@ sims <- lapply(
 ) %>% bind_rows()
 
 #' Filter both the observed and simulated data
+#' For the observed data, we only want actual observations that weren't BLQ
+#' For the simulated data, we take simulated observations that were above LQ
 fdata <- filter(data, EVID==0, BLQ == 0)
-fsims <- filter(sims, EVID==0, Y  >= 10)
+fsims <- filter(sims, EVID==0, Y >= 10)
 
 #' # Create the plot
 #' 

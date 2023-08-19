@@ -132,3 +132,19 @@ ex0 <-
     ENDDTC = lubridate::ymd(EXENDTC)
   )
 
+## Fold out doses
+### The ex domain provides the start and stop date of dosing cycles for
+### each subject. This needs to be converted so that there is 1 row
+### per dose.
+
+fo <- vector(mode = "list", length = nrow(ex0))
+
+for (i in 1:nrow(ex0)) {
+  row.i <- ex0[i,]
+  n_days <- as.numeric(difftime(row.i$ENDDTC, row.i$DATETIME, units = "days"))
+  
+  cycle_doses <- row.i[rep(1, n_days+1),]
+  fo[[i]] <- mutate(cycle_doses, DATETIME = row.i$DATETIME + days(seq((n_days+1))-1))
+}
+fold_out_doses <- bind_rows(fo)
+

@@ -40,7 +40,6 @@ Packages:
   - yspec
   - kableExtra
   - bbr
-  - mrggt
   - data.table
   - pmtables
   - mrgmisc
@@ -50,9 +49,11 @@ Packages:
   - here
   - logitnorm
   - nhanesA
+  - mrgda
+  - admiral.test
 
 Repos:
-  - MPN: https://mpn.metworx.com/snapshots/stable/2023-01-25
+  - MPN: https://mpn.metworx.com/snapshots/stable/2023-06-29
 
 
 Lockfile:

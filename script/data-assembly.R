@@ -17,14 +17,16 @@ library(tidyverse)
 library(mrgda)
 library(here)
 library(yspec)
+library(lastdose)
 
 ### Directories ----------------------------
 dataDir = here("data", "source")
 thisScript = "data-assembly.R"
+derived_path = here("data/derived/examp-da.csv")
 
 # Read in data specification ---------------
 # Tell R where to find the yml
-specLo = here("data", "spec", "analysis3.yml")
+specLo = here("data", "spec", "examp-da-spec.yml")
 
 # load in the spec file
 spec = ys_load(specLo)
@@ -69,7 +71,7 @@ dm1 <-
     ),
     ACTARM,
     STUDY = STUDYID,
-    SUBJID
+    SUBJ = SUBJID
   )
 # Save the subject level variables to the derived$sl list
 derived$sl$dm <- dm1
@@ -122,29 +124,89 @@ derived$sl$lb <- lb1
 # Assemble dosing ---------------------------------------------------------
 ex0 <-
   src_list$ex %>% 
+  filter(EXTRT %in% c("PLACEBO", "XANOMELINE")) %>% #Filter to only treatment types of interest
   transmute(
     USUBJID,
-    EXTRT,
+    EVID = 1,
+    DVID = 1,
     DOSE = EXDOSE,
-    AMT = DOSE,
-    VISIT,
-    DATETIME = lubridate::ymd(EXSTDTC),
-    ENDDTC = lubridate::ymd(EXENDTC)
+    AMT = DOSE, # Note, on some projects AMT may need to be converted to new units
+    DATETIME = lubridate::ymd(EXSTDTC)
   )
 
-## Fold out doses
-### The ex domain provides the start and stop date of dosing cycles for
-### each subject. This needs to be converted so that there is 1 row
-### per dose.
+# Save the time varying dosing rows to the derived$tv list
+derived$tv$ex <- ex0
 
-fo <- vector(mode = "list", length = nrow(ex0))
+# Assemble PK -------------------------------------------------------------
+pc0 <-
+  src_list$pc %>% 
+  filter(PCTEST == "XANOMELINE") %>% 
+  transmute(
+    USUBJID,
+    EVID = 0,
+    DVID = 2,
+    BLQ = if_else(grepl("<", PCORRES), 1, 0),
+    DV = if_else(BLQ == 0, PCSTRESN, NA_real_),
+    LLOQ = PCLLOQ,
+    DATETIME = lubridate::ymd_hms(PCDTC)
+    )
 
-for (i in 1:nrow(ex0)) {
-  row.i <- ex0[i,]
-  n_days <- as.numeric(difftime(row.i$ENDDTC, row.i$DATETIME, units = "days"))
-  
-  cycle_doses <- row.i[rep(1, n_days+1),]
-  fo[[i]] <- mutate(cycle_doses, DATETIME = row.i$DATETIME + days(seq((n_days+1))-1))
-}
-fold_out_doses <- bind_rows(fo)
+# Save the time varying pk observation rows to the derived$tv list
+derived$tv$pc <- pc0
 
+# Combine domains ---------------------------------------------------------
+
+# Check for duplicates in sl domain
+stopifnot(
+  purrr::map(derived$sl, ~ !duplicated(.x[["USUBJID"]])) %>% unlist() %>% any()
+)
+
+nm0 <-
+  # Bind all time varying data
+  bind_rows(derived$tv) %>% 
+  # Left join on subject level data
+  left_join(
+    reduce(derived$sl, full_join) 
+  ) %>%
+  arrange(
+    USUBJID,
+    DATETIME
+  ) %>% 
+  group_by(USUBJID) %>% 
+  tidyr::fill("DOSE", .direction = "downup") %>% 
+  ungroup()
+
+# Add TAFD and TAD columns using lastdose
+nm1 <- 
+  nm0 %>% 
+  lastdose::lastdose(include_tafd = TRUE, time_units = "hours") %>% 
+  mutate(
+    TIME = TAFD
+  )
+
+# Create ID column
+# If derived data exists, the IDs from there will be used so that
+# the ID number stays consistent within subject across derived data versions
+nm2 <- 
+  nm1 %>% 
+  assign_id(.subject_col = "USUBJID") %>% 
+  mutate(
+    MDV = if_else(is.na(DV), 1, 0),
+    C = ".",
+    NUM = 1:n())
+
+derived$nm <- 
+  nm2 %>% select(names(spec))
+
+
+# Write out data ----------------------------------------------------------
+
+# Check data
+# Use ys_check to confirm all columns match the specified type and order defined in the spec file
+yspec::ys_check(derived$nm, spec)
+
+write_derived(
+  .data = derived$nm,
+  .spec = spec,
+  .file = derived_path
+)

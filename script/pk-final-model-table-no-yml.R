@@ -4,6 +4,8 @@ library(pmtables)
 library(here)
 library(bbr)
 library(magrittr)
+library(pmparams)
+
 
 ### Directories ----------------------------
 scriptDir <- here("script")
@@ -13,10 +15,6 @@ if(!file.exists(tabDir)) dir.create(tabDir)
 thisScript <- "pk-final-model-table-no-yml.R"
 
 set.seed(5238974)
-
-
-# Helper functions ----------------------------
-source(here("script", "functions-table.R"))
 
 
 # Set table options ----------------------------
@@ -45,7 +43,6 @@ sum <- read_model(here(run)) %>% model_summary()
 ##'   panel=="IIV" ~ "Interindividual variance parameters" (diagonals << function takes care of this)
 ##'   panel=="IOV"  ~ "Interoccasion variance parameters"
 ##'   panel=="RV" ~ "Residual variance"
-##'   Additional options can be added to `getPanelName` function in `functions-table.R`
 ##' 
 ##' trans = define how do you want the parameter to be transformed
 ##'   there are a finite options currently coded up (see below) but you're welcome
@@ -62,7 +59,7 @@ sum <- read_model(here(run)) %>% model_summary()
 ##'        "addErr"     - for additive error terms (coded using SIGMA in $ERROR) - returns est.+ SD
 ##'        "propErr"    - for proportional error terms (coded using SIGMA in $ERROR) - returns est.+CV%
 
-paramKey = tribble(
+key = tribble(
   ~name, ~abb, ~desc, ~panel, ~trans,
   "THETA1",  "KA (1/h)", "First order absorption rate constant",   "struct", "logTrans",
   "THETA2", "V2/F (L)",  "Apparent central volume",                "struct", "logTrans",
@@ -85,23 +82,13 @@ paramKey = tribble(
 )
 
 
-# Extract PK parameters and generate values to be displayed for report table ----------------------------
-param_df <- sum  %>% 
-  param_estimates() %>% 
-  mutate(name = gsub("[[:punct:]]", "", parameter_names)) %>% 
-  inner_join(paramKey, by = "name")  %>%    # add names and labels to be used in the table
-  checkTransforms() %>%       # check for associated THETAs (e.g. for logit transformations)
-  defineRows() %>%        # define series of T/F variables
-  getValueSE() %>%            # define which value and se are required
-  get95CI() %>%               # get upper/lower ci - determined using the SE and estimate
-  formatValues() %>%      # back transform as needed, round using'sig' and combine columns where needed
-  formatGreekNames() %>%  # format the labels to display greek symbols
-  getPanelName() %>%          # Define panel names based on parameter type
-  dplyr::select(type, abb, greek, desc, value, ci, shrinkage) %>%  # select columns of interest
-  as.data.frame
-
+# Extract PK parameters and generate values to be displayed in report table ----------------------------
+param_df <- sum %>% 
+  define_param_table(.key = key) %>% 
+  format_param_table()
 
 param_df 
+
 
 
 # Define footnotes ---------------------------- ----------------------------
@@ -132,7 +119,7 @@ fixed = param_df %>%
   st_blank("abb", "greek", "desc") %>% 
   st_rename("Estimate" = "value", 
             "95\\% CI" = "ci") %>% 
-  st_files(output = "pk-param-final-fixed.tex") %>% 
+  st_files(output = "pk-param-final-fixed-no-yml.tex") %>% 
   st_notes(footLog, footAbbrev, footDerive1) %>% 
   st_noteconf(type = "minipage", width = 1) %>% 
   stable() %T>% 
@@ -152,7 +139,7 @@ random = param_df %>%
   st_rename("Estimate" = "value", 
             "95\\% CI" = "ci",
             "Shrinkage (\\%)" = "shrinkage") %>% 
-  st_files(output = "pk-param-final-random.tex") %>% 
+  st_files(output = "pk-param-final-random-no-yml.tex") %>% 
   st_notes(footAbbrev_Om, footDerive2, footDerive3) %>% 
   st_noteconf(type = "minipage", width = 1) %>% 
   stable() %T>% 

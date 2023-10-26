@@ -5,6 +5,7 @@ library(here)
 library(bbr)
 library(magrittr)
 library(yaml)
+library(pmparams)
 
 
 ### Directories ----------------------------
@@ -16,10 +17,6 @@ thisScript <- "pk-base-model-table.R"
 
 set.seed(5238974)
 
-
-# Helper functions ----------------------------
-source(here("script", "functions-table.R"))
-
 # Set table options ----------------------------
 options(mrg.script = thisScript, 
         pmtables.dir = tabDir)
@@ -30,27 +27,16 @@ run <- "model/pk/102"
 sum <- read_model(here(run)) %>% model_summary() 
 
 
-# get parameter names from yaml ---------------------------- -------------------
-key <- yaml_as_df(here("script", "pk-parameter-key.yaml"))
+# get parameter names from yaml ------------------------------------------------
+key <- here("script", "pk-parameter-key.yaml")
 
 
-# Extract PK parameters and generate values to be displayed for report table ----
-param_df <- sum  %>% 
-  param_estimates() %>% 
-  mutate(name = gsub("[[:punct:]]", "", parameter_names)) %>% 
-  inner_join(key, by = "name") %>%    # add names and labels to be used in the table
-  checkTransforms() %>%               # check for associated THETAs (e.g. for logit transformations)
-  defineRows() %>%                    # define series of T/F variables
-  getValueSE() %>%                    # define which value and se are required
-  get95CI() %>%                       # get upper/lower ci - determined using the SE and estimate
-  formatValues() %>%                  # back transform as needed, round using' sig' and combine columns where needed
-  formatGreekNames() %>%              # format the labels to display greek symbols
-  getPanelName() %>%                  # Define panel names based on parameter type
-  dplyr::select(type, abb, greek, desc, value, ci, shrinkage) %>%  # select columns of interest
-  as.data.frame
+# Extract PK parameters and generate values to be displayed for report table ----------------------------
+param_df <- sum %>% 
+  define_param_table(.key = key) %>% 
+  format_param_table()
 
 param_df 
-
 
 
 # Define footnotes ---------------------------- ----------------------------

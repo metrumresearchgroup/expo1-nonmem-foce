@@ -6,6 +6,7 @@ library(bbr)
 library(magrittr)
 library(yaml)
 library(glue)
+library(pmparams)
 
 
 ### Directories ----------------------------
@@ -17,70 +18,40 @@ thisScript <- "pk-final-model-table-boot.R"
 
 set.seed(5238974)
 
-
-# Helper functions ----------------------------
-source(here("script", "functions-table.R"))
-
-
 # Set table options ----------------------------
 options(mrg.script = thisScript, 
         pmtables.dir = tabDir)
 
 
 # get parameter names from yaml ------------------------------------------------
-key <- yaml_as_df(here("script", "pk-parameter-key.yaml"))
-
-
-# Read in bootstrap results for confidence intervals ----------------------------
-boot <- readr::read_csv(here("data/boot/boot-106.csv"))
-
-bootParam = boot %>%
-  param_estimates_compare() %>%
-  rename(estimate = `50%`, lower = `2.5%`, upper = `97.5%`) %>%
-  mutate(name = gsub("[[:punct:]]", "", parameter_names)) %>% 
-  inner_join(key, by = "name")
-
+key <- here("script", "pk-parameter-key.yaml")
 
 # Read in final model (non-bootstrap version) ----------------------------
 run = "model/pk/106"
 sum <- read_model(here(run)) %>% model_summary() 
 
 
-# Extract PK parameters and generate values to be displayed for report table ----------------------------
+# Extract PK parameters and generate values to be displayed in report table ----------------------------
 
 ##' For non-bootstrap run
 param_df <- sum  %>% 
-  param_estimates() %>% 
-  mutate(name = gsub("[[:punct:]]", "", parameter_names)) %>% 
-  inner_join(key, by = "name")  %>%    # add names and labels to be used in the table
-  checkTransforms() %>%       # check for associated THETAs (e.g. for logit transformations)
-  defineRows() %>%        # define series of T/F variables
-  getValueSE() %>%            # define which value and se are required
-  get95CI() %>%               # get upper/lower ci - determined using the SE and estimate
-  formatValues() %>%      # back transform as needed, round using'sig' and combine columns where needed
-  formatGreekNames() %>%  # format the labels to display greek symbols
-  getPanelName() %>%          # Define panel names based on parameter type
-  dplyr::select(type, abb, greek, desc, value, ci, shrinkage) %>%  # select columns of interest
-  as.data.frame
+  define_param_table(.key = key) %>% 
+  format_param_table()
 
 param_df
 
 
+# Read in bootstrap results for confidence intervals ----------------------------
+boot <- readr::read_csv(here("data/boot/boot-106.csv"))
+
 ##' For bootstrap run
-##' Instead of using 'get95CI()' to get the 95% CI, replace the value in 'estimate' 
+##' Instead of using the 95% CI, replace the value in 'estimate' 
 ##' with the median from the bootstrap runs and add the upper and lower values
 
-boot_df <- bootParam %>%
-  left_join(sum %>% 
-              param_estimates() %>% select(parameter_names, fixed), 
-            by = "parameter_names") %>% 
-  mutate(value = estimate) %>% 
-  checkTransforms() %>%       # check for associated THETAs (e.g. for logit transformations)
-  defineRows() %>% 
-  backTrans_log() %>%         # back-transform any log thetas 
-  backTrans_logit() %>%       # back-transform any logit thetas
-  formatValues_boot() %>% 
-  dplyr::select(abb, desc, boot_value, boot_ci) 
+boot_df <- boot %>%
+  define_boot_table(.key = key,
+                    .nonboot_estimates = sum) %>% 
+  format_boot_table()
 
 boot_df
 

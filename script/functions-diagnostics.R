@@ -100,7 +100,8 @@ model_diagnostics <- function(
     template,
     params = .p,
     output_dir = dest_dir,
-    output_file = html_file
+    output_file = html_file,
+    envir = new.env()
   )
   
   invisible(return(file.path(dest_dir, html_file)))

@@ -4,6 +4,7 @@ library(pmtables)
 library(here)
 library(magrittr)
 library(yaml)
+library(pmparams)
 
 ### Directories ----------------------------
 scriptDir <- here("script")
@@ -13,8 +14,7 @@ if(!file.exists(tabDir)) dir.create(tabDir)
 
 thisScript <- "pk-final-model-table-no-bbr.R"
 
-
-# Helper functions ----------------------------
+# Helper functions ----------------------------	
 source(here("script", "functions-table.R"))
 
 
@@ -37,30 +37,25 @@ extParams = read_extfile(extLoc)
 shkLoc = here(modelDir, modelName, paste0(modelName, ".shk"))
 shrinkDF = read_shkfile(shkLoc)
 
+# combine extParams and shrinkDF for define_param_table() function ----------------------------
+params = extParams %>%  
+  mutate(name = gsub("[[:punct:]]", "", parameter_names)) %>% 
+  left_join(shrinkDF, by = "name") 
+
 
 ### Everything from this point on is almost identical to the rbablyon workflow
 
+
 # get parameter names from yaml ------------------------------------------------
-key <- yaml_as_df(here("script", "pk-parameter-key.yaml"))
+key <- here("script", "pk-parameter-key.yaml")
 
 
-# Extract PK parameters and generate values to be displayed for report table ----------------------------
-param_df <- extParams %>% 
-  mutate(name = gsub("[[:punct:]]", "", parameter_names)) %>% 
-  left_join(shrinkDF, by = "name") %>% 
-  inner_join(key, by = "name")  %>%    # add names and labels to be used in the table
-  checkTransforms() %>%       # check for associated THETAs (e.g. for logit transformations)
-  defineRows() %>%        # define series of T/F variables
-  getValueSE() %>%            # define which value and se are required
-  get95CI() %>%               # get upper/lower ci - determined using the SE and estimate
-  formatValues() %>%      # back transform as needed, round using'sig' and combine columns where needed
-  formatGreekNames() %>%  # format the labels to display greek symbols
-  getPanelName() %>%          # Define panel names based on parameter type
-  dplyr::select(type, abb, greek, desc, value, ci, shrinkage) %>%  # select columns of interest
-  as.data.frame
+# Extract PK parameters and generate values to be displayed in report table ----------------------------
+param_df <- params %>% 
+  define_param_table(.key = key) %>% 
+  format_param_table()
 
-param_df %>% select(-type)
-
+param_df 
 
 
 # Define footnotes ---------------------------- ----------------------------

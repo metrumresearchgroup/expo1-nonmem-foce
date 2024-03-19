@@ -9,7 +9,7 @@ params:
   run: 102
   modelDir: "model/pk"
   script: "diagnostics-report.Rmd"
-  yspec: "analysis3.yml"
+  yspec: "pk.yml"
   contCov: !r c("AGE","WT","ALB","EGFR")
   catCov: !r c("STUDY", "RF", "CP", "DOSE")
   etas: !r c("ETA1//ETA-KA", "ETA2//ETA-V/F", "ETA3//ETA-CL/F")
@@ -121,7 +121,7 @@ The aim is to use the information in the spec file to label the figures automati
 ```{r yspec_details, echo = params$include_code}
 
 # Tell R where to find the yml
-specLo <- here::here("data", "spec", params$yspec)
+specLo <- here::here("data", "derived", params$yspec)
 
 # load in the spec file
 spec <- ys_load(specLo) %>% ys_namespace("plot")
@@ -152,7 +152,7 @@ inter-occassion variaibility (IOV), the occassion variable should be included wi
 mod <- read_model(here::here(thisModelPath))
 
 # This can now be done with bbr::nm_join() 
-# # Read in nonmem dataset - analysis3.csv
+# # Read in nonmem dataset - pk.csv
 # nm <- data.table::fread(file=bbr::get_data_path(mod), na.strings='.') %>% select(-DV)
 # # Read in table from nonmem run
 # tab <- mrgmisc::read_nonmem(bbr::build_path_from_model(mod, ".tab"))

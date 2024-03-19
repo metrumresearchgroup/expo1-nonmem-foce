@@ -1,0 +1,46 @@
+SETUP__:
+  lookup_file: [lookup.yml]
+  description: Example PopPK analysis data set
+  sponsor: example-project
+  projectnumber: examp101F
+  use_internal_db: true
+  character_last: true
+  comment_col: "C"
+  flags:
+    covariate: [AGE, WT, EGFR, ALB]
+    diagContCov: [AGE, WT, ALB, EGFR]
+    diagCatCov: [STUDY, RF, CP, DOSE]
+C:
+NUM:
+ID:
+SUBJ:
+USUBJID:
+TIME:
+SEQ: 
+CMT:
+EVID:
+AMT: 
+DV:
+AGE:
+WT: 
+HT:
+EGFR:
+ALB:
+BMI:
+SEX: 
+AAG:
+SCR: 
+AST:
+ALT: 
+CP:
+TAFD:
+TAD:
+LDOS:
+MDV:
+BLQ:
+PHASE: 
+STUDYN: 
+STUDY: 
+DOSE: 
+ACTARM: 
+RF: 

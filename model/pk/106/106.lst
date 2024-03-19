@@ -1,10 +1,10 @@
-Fri Oct 13 13:54:55 EDT 2023
+Tue Mar 12 08:57:25 EDT 2024
 $PROBLEM From bbr: see 106.yaml for details
 
 $INPUT C NUM ID TIME SEQ CMT EVID AMT DV AGE WT HT EGFR ALB BMI SEX AAG
        SCR AST ALT CP TAFD TAD LDOS MDV BLQ PHASE
 
-$DATA ../../../data/derived/analysis3.csv IGNORE=(C='C', BLQ=1)
+$DATA ../../../data/derived/pk.csv IGNORE=(C='C', BLQ=1)
 
 $SUBROUTINE ADVAN4 TRANS4
 
@@ -53,8 +53,7 @@ $SIGMA
 
 $EST MAXEVAL=9999 METHOD=1 INTER SIGL=6 NSIG=3 PRINT=1 RANMETHOD=P MSFO=./106.msf 
 $COV PRINT=E RANMETHOD=P
-$TABLE NUM IPRED NPDE CWRES NOPRINT ONEHEADER RANMETHOD=P FILE=106.tab
-$TABLE NUM CL V2 Q V3 KA ETAS(1:LAST) NOAPPEND NOPRINT ONEHEADER FILE=106par.tab
+$TABLE NUM IPRED NPDE CWRES CL V2 Q V3 KA ETAS(1:LAST) NOPRINT ONEHEADER RANMETHOD=P FILE=106.tab
 
 NM-TRAN MESSAGES
   
@@ -68,8 +67,8 @@ Note: Analytical 2nd Derivatives are constructed in FSUBS but are never used.
 
 License Registered to: Metrum Research Group
 Expiration Date:    14 JUL 2024
-Current Date:       13 OCT 2023
-Days until program expires : 276
+Current Date:       12 MAR 2024
+Days until program expires : 122
 1NONLINEAR MIXED EFFECTS MODEL PROGRAM (NONMEM) VERSION 7.5.1
  ORIGINALLY DEVELOPED BY STUART BEAL, LEWIS SHEINER, AND ALISON BOECKMANN
  CURRENT DEVELOPERS ARE ROBERT BAUER, ICON DEVELOPMENT SOLUTIONS,
@@ -136,7 +135,7 @@ Days until program expires : 276
  FORCED POS. DEFINITE SETTING DURING PRECONDITIONING: (FPOSDEF):0
  SIMPLE POS. DEFINITE SETTING: (POSDEF):-1
 0TABLES STEP OMITTED:    NO
- NO. OF TABLES:           2
+ NO. OF TABLES:           1
  SEED NUMBER (SEED):    11456
  NPDTYPE:    0
  INTERPTYPE:    0
@@ -155,20 +154,7 @@ Days until program expires : 276
  RFORMAT:
  FIXED_EFFECT_ETAS:
 0USER-CHOSEN ITEMS:
- NUM IPRED NPDE CWRES
-0-- TABLE   2 --
-0RECORDS ONLY:    ALL
-04 COLUMNS APPENDED:    NO
- PRINTED:                NO
- HEADERS:               ONE
- FILE TO BE FORWARDED:   NO
- FORMAT:                S1PE11.4
- IDFORMAT:
- LFORMAT:
- RFORMAT:
- FIXED_EFFECT_ETAS:
-0USER-CHOSEN ITEMS:
- NUM CL V2 Q V3 KA ETA1 ETA2 ETA3
+ NUM IPRED NPDE CWRES CL V2 Q V3 KA ETA1 ETA2 ETA3
 1DOUBLE PRECISION PREDPP VERSION 7.5.1
 
  TWO COMPARTMENT MODEL WITH FIRST-ORDER ABSORPTION (ADVAN4)
@@ -631,9 +617,9 @@ Days until program expires : 276
  TOTAL EFFECTIVE ETAS (NIND*NETA):                           480
   
  #TERE:
- Elapsed estimation  time in seconds:    50.62
- Elapsed covariance  time in seconds:    20.89
- Elapsed postprocess time in seconds:     1.86
+ Elapsed estimation  time in seconds:    42.77
+ Elapsed covariance  time in seconds:    31.74
+ Elapsed postprocess time in seconds:     2.70
 1
  
  
@@ -1023,7 +1009,7 @@ Days until program expires : 276
          8.07E-02  1.33E-01  1.92E-01  2.32E-01  3.41E-01  5.07E-01  6.73E-01  8.47E-01  8.92E-01  9.47E-01  9.51E-01  1.10E+00
           1.66E+00  2.53E+00  3.91E+00
  
- Elapsed finaloutput time in seconds:     0.25
- #CPUT: Total CPU Time in Seconds,       71.430
+ Elapsed finaloutput time in seconds:     0.14
+ #CPUT: Total CPU Time in Seconds,       73.128
 Stop Time:
-Fri Oct 13 13:56:34 EDT 2023
+Tue Mar 12 08:59:04 EDT 2024

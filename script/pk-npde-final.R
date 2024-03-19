@@ -13,7 +13,7 @@ library(here)
 options(mrggsave.dir = here("deliv", "figure"), mrg.script = "pk-npde-final.R")
 options(bbr.verbose = FALSE)
 
-spec <- ys_load(here("data", "spec", "analysis3.yml"))
+spec <- ys_load(here("data", "derived", "pk.yml"))
 tab <- nm_join(here("model", "pk", "106"))
 
 data <- 

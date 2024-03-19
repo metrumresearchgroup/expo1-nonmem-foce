@@ -40,7 +40,7 @@ options(mrggsave.dir = here("deliv/figure"), mrg.script = "pk-pcheck-final.R")
 data <- nm_join(here("model/pk/106"), .superset = TRUE)
 data <- filter(data, is.na(C))
 
-spec <- ys_load(here("data/spec/analysis3.yml"))
+spec <- ys_load(here("data/derived/pk.yml"))
 lab <- ys_get_short_unit(spec, parens = TRUE)
 
 #' # Simulate the npc
@@ -60,8 +60,7 @@ sim <- function(rep, data, model) {
     carry_out = "EVID,STUDYN,LDOS,DOSE",
     recover = "STUDY,C,USUBJID,ACTARM,RF", 
     Req = "Y", 
-    output = "df", 
-    quiet  = TRUE
+    output = "df"
   ) %>%  mutate(irep = rep) 
 }
 
@@ -156,14 +155,14 @@ obs_cmin <- mutate(obs_cmin, DV = ifelse(BLQ == 1, NA_real_, DV))
 #' Get the dose-normalized observed Cmin
 omin <- 
   obs_cmin %>%
-  filter(!is.na(DV)) %>% # drop?
+  filter(!is.na(DV)) %>%
   group_by(ID,DOSE,RF) %>%
   summarise(Cmin_obs = min(DV/DOSE), .groups = "drop")
 
 #' Get the dose-normalized simulated Cmin
 smin <- 
   sims_cmin %>%
-  filter(!is.na(Y)) %>% # drop?
+  filter(!is.na(Y)) %>%
   group_by(irep,ID,DOSE,RF) %>%
   summarise(Cmin = min(Y/DOSE), .groups = "drop") 
 

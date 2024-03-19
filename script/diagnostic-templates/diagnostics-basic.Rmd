@@ -13,7 +13,7 @@ params:
   diagCatCov: NULL
   excludeETAs: !r c() 
   script: "diagnostics-basic.Rmd"
-  yspec: "data/spec/analysis3.yml"
+  yspec: "data/derived/pk.yml"
   drugNameUnits: "concentration (mg/L)"
 ---
 

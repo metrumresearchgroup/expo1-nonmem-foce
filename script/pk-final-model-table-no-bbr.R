@@ -116,8 +116,10 @@ random = param_df %>%
 
 ##  Save tables out to pdf preview ----------------------------
 # Check they fit within the report margins
-if(interactive()) st2report(list(fixed, random),
-                            ntex = 2,
-                            output_dir = tabDir,
-                            stem = "preview-no-bbr-param") 
+st2report(
+  list(fixed, random),
+  ntex = 2,
+  output_dir = tabDir,
+  stem = "preview-no-bbr-param"
+)
 

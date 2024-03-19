@@ -16,7 +16,7 @@ library(rlang)
 library(bbr)
 
 #' Load data specification object and modify
-spec <- ys_load(here("data/spec/analysis3.yml"))
+spec <- ys_load(here("data/derived/pk.yml"))
 
 spec <- update_short(spec, EGFR = "eGFR")
 

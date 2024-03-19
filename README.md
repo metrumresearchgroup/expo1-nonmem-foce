@@ -8,8 +8,8 @@ will evolve with time and that it would be best to check back periodically.
 # Data
 
 - PK model estimation data set 
-  - location : `data/derived/analysis3.csv`
-  - spec file : `/data/spec/analysis3.yml`
+  - location : `data/derived/pk.csv`
+  - spec file : `/data/derived/pk.yml`
   - assembly : `da-pk-01.R`
   - exploratory data analysis : `eda-tables.R` and `eda-figures.R`
   - bootstrap parameter estimates : `data/boot/boot-106.csv`
@@ -61,5 +61,5 @@ will evolve with time and that it would be best to check back periodically.
 
 
 
-Copied from internal repo at ad1d88601a143bd146fb7a44c610ca010caa0108
+Copied from internal repo at eb0c8e0749a3b6a06781237779262896d04cd0b2
 

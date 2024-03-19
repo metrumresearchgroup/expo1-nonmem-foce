@@ -52,8 +52,8 @@ rmd_template <- here("script", "diagnostic-templates", "diagnostics-report.Rmd")
 ##' your template.Rmd then you don't need to redefine them here (see later examples below)
 
 modelSpecifics <- list(
-                      # Define name of spec (this example assumes it is located within data > spec)
-                      yspec = "analysis3.yml",
+                      # Define name of spec (this example assumes it is located within data > derived)
+                      yspec = "pk.yml",
                       # Vector of covariates to be plotted (as they appear in the spec)
                       contCov = c("AGE","WT","ALB","EGFR"), 
                       catCov = c("STUDY", "RF", "CP", "DOSE"),
@@ -186,7 +186,7 @@ model_diagnostics(
 ## Passing `include_plots = FALSE` prevents the plots showing in the HTML doc (to speed up rendering),
 ## but still saves the plots out to individual files via `mrggsave`.
 modelSpecifics = list(
-                      yspec = "analysis3.yml",
+                      yspec = "pk.yml",
                       drugNameUnits = "Mockdralazine concentration (mg/L)",
                       include_plots = FALSE 
 )

@@ -9,7 +9,7 @@ params:
   run: 106
   modelDir: "model/pk"
   script: "id-dv-pred-plots.Rmd"
-  yspec: "analysis3.yml"
+  yspec: "pk.yml"
   drugNameUnits: "Mockdralazine concentration (mg/L)"
   include_code: FALSE
   include_plots: FALSE
@@ -117,7 +117,7 @@ The aim is to use the information in the spec file to label the figures automati
 ```{r yspec_details, echo = params$include_code}
 
 # Tell R where to find the yml
-specLo <- here::here("data", "spec", params$yspec)
+specLo <- here::here("data", "derived", params$yspec)
 
 # load in the spec file
 spec <- ys_load(specLo) %>% ys_namespace("plot")

@@ -18,7 +18,7 @@ options(bbr.verbose = FALSE, pmtables.dir = here("deliv/table"))
 
 mod <- modlib("pk2")
 
-spec <- ys_load(here("data/spec/analysis3.yml"))
+spec <- ys_load(here("data/derived/pk.yml"))
 
 data <- nm_join(here("model/pk/106"))
 

@@ -2,7 +2,7 @@ $PROB RUN# 100 - fit of Phase I data base model
 $INPUT C NUM ID TIME SEQ CMT EVID AMT DV AGE WT HT EGFR ALB BMI SEX AAG
        SCR AST ALT CP TAFD TAD LDOS MDV BLQ PHASE
 
-$DATA ../../../data/derived/analysis3.csv IGNORE=@ IGNORE=(BLQ.EQ.1)
+$DATA ../../../data/derived/pk.csv IGNORE=@ IGNORE=(BLQ.EQ.1)
 
 $SUBROUTINE ADVAN2 TRANS2
 

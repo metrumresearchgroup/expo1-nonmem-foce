@@ -3,7 +3,7 @@ $PROBLEM From bbr: see 101.yaml for details
 $INPUT C NUM ID TIME SEQ CMT EVID AMT DV AGE WT HT EGFR ALB BMI SEX AAG
        SCR AST ALT CP TAFD TAD LDOS MDV BLQ PHASE
 
-$DATA ../../../data/derived/analysis3.csv IGNORE=(C='C', BLQ=1)
+$DATA ../../../data/derived/pk.csv IGNORE=(C='C', BLQ=1)
 
 $SUBROUTINE ADVAN4 TRANS4
 

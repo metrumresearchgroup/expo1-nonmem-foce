@@ -19,7 +19,7 @@ source(here("script/functions-diagnostics.R"))
 
 ### define model specifics
 ### (useful if you're going to reuse the same `modelSpecifics` for multiple models)
-modelSpecifics <- list(yspec = "data/spec/analysis3.yml",
+modelSpecifics <- list(yspec = "data/derived/pk.yml",
                     drugNameUnits = "concentration (mg/L)"
 )
 

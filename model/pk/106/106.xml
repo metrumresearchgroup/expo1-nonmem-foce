@@ -5,14 +5,14 @@ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 xsi:schemaLocation="http://namespaces.oreilly.com/xmlnut/address output.xsd"
 xmlns:nm="http://namespaces.oreilly.com/xmlnut/address"
 >
-<nm:start_datetime>2023-10-13T13:55:18.453</nm:start_datetime>
+<nm:start_datetime>2024-03-12T08:57:45.154</nm:start_datetime>
 <nm:control_stream><![CDATA[
 $PROBLEM From bbr: see 106.yaml for details
 
 $INPUT C NUM ID TIME SEQ CMT EVID AMT DV AGE WT HT EGFR ALB BMI SEX AAG
        SCR AST ALT CP TAFD TAD LDOS MDV BLQ PHASE
 
-$DATA ../../../data/derived/analysis3.csv IGNORE=(C='C', BLQ=1)
+$DATA ../../../data/derived/pk.csv IGNORE=(C='C', BLQ=1)
 
 $SUBROUTINE ADVAN4 TRANS4
 
@@ -61,8 +61,7 @@ $SIGMA
 
 $EST MAXEVAL=9999 METHOD=1 INTER SIGL=6 NSIG=3 PRINT=1 RANMETHOD=P MSFO=./106.msf
 $COV PRINT=E RANMETHOD=P
-$TABLE NUM IPRED NPDE CWRES NOPRINT ONEHEADER RANMETHOD=P FILE=106.tab
-$TABLE NUM CL V2 Q V3 KA ETAS(1:LAST) NOAPPEND NOPRINT ONEHEADER FILE=106par.tab
+$TABLE NUM IPRED NPDE CWRES CL V2 Q V3 KA ETAS(1:LAST) NOPRINT ONEHEADER RANMETHOD=P FILE=106.tab
 ]]></nm:control_stream>
 <nm:nmtran><![CDATA[
 
@@ -78,8 +77,8 @@ Note: Analytical 2nd Derivatives are constructed in FSUBS but are never used.
 <nm:license_information><![CDATA[
 License Registered to: Metrum Research Group
 Expiration Date:    14 JUL 2024
-Current Date:       13 OCT 2023
-Days until program expires : 276
+Current Date:       12 MAR 2024
+Days until program expires : 122
 ]]></nm:license_information>
 <nm:program_information><![CDATA[
 1NONLINEAR MIXED EFFECTS MODEL PROGRAM (NONMEM) VERSION 7.5.1
@@ -152,7 +151,7 @@ Days until program expires : 276
  FORCED POS. DEFINITE SETTING DURING PRECONDITIONING: (FPOSDEF):0
  SIMPLE POS. DEFINITE SETTING: (POSDEF):-1
 0TABLES STEP OMITTED:    NO
- NO. OF TABLES:           2
+ NO. OF TABLES:           1
  SEED NUMBER (SEED):    11456
  NPDTYPE:    0
  INTERPTYPE:    0
@@ -171,20 +170,7 @@ Days until program expires : 276
  RFORMAT:
  FIXED_EFFECT_ETAS:
 0USER-CHOSEN ITEMS:
- NUM IPRED NPDE CWRES
-0-- TABLE   2 --
-0RECORDS ONLY:    ALL
-04 COLUMNS APPENDED:    NO
- PRINTED:                NO
- HEADERS:               ONE
- FILE TO BE FORWARDED:   NO
- FORMAT:                S1PE11.4
- IDFORMAT:
- LFORMAT:
- RFORMAT:
- FIXED_EFFECT_ETAS:
-0USER-CHOSEN ITEMS:
- NUM CL V2 Q V3 KA ETA1 ETA2 ETA3
+ NUM IPRED NPDE CWRES CL V2 Q V3 KA ETA1 ETA2 ETA3
 1DOUBLE PRECISION PREDPP VERSION 7.5.1
 
  TWO COMPARTMENT MODEL WITH FIRST-ORDER ABSORPTION (ADVAN4)
@@ -235,10 +221,9 @@ Days until program expires : 276
  nm:cov_special='no' nm:cov_compressed='no' nm:cov_slow_gradient='noslow' nm:cov_siglocov='-1' nm:cov_siglcov='-1'
  nm:cov_tol='-1' nm:cov_atol='-1' nm:cov_nofcov='no' nm:cov_cholroff='0' nm:cov_knuthsumoff='-1' nm:cov_resume='no'
  nm:cov_sirsample='BLANK' nm:cov_thbnd='1' nm:cov_precond='0' nm:cov_preconds='tos' nm:cov_pfcond='0'
- nm:cov_pretype='0' nm:cov_fposdef='0' nm:cov_posdef='-1' nm:tab_omitted='no' nm:tab_number='2' nm:tab_seed='11456'
+ nm:cov_pretype='0' nm:cov_fposdef='0' nm:cov_posdef='-1' nm:tab_omitted='no' nm:tab_number='1' nm:tab_seed='11456'
  nm:tab_npdtype='0' nm:tab_interptype='0' nm:tab_ranmethod='3up' nm:tab_esample='300' nm:tab_wres='eigenvalue'
- nm:tab_fixedetas_01='BLANK' nm:tab_fixedetas_02='BLANK' nm:pred_advan='4' nm:pred_evid='7' nm:pred_time='4'
- nm:pred_amt='8' nm:pred_cmt='6'
+ nm:tab_fixedetas_01='BLANK' nm:pred_advan='4' nm:pred_evid='7' nm:pred_time='4' nm:pred_amt='8' nm:pred_cmt='6'
 />
 <nm:estimation nm:number='1' nm:type='0'>
 <nm:table_series>1</nm:table_series>
@@ -417,11 +402,11 @@ Days until program expires : 276
 <nm:col nm:cname='EPS1'>9.7800886072125000</nm:col>
 </nm:row>
 </nm:epsshrinkvr>
-<nm:estimation_elapsed_time>50.62</nm:estimation_elapsed_time>
+<nm:estimation_elapsed_time>42.77</nm:estimation_elapsed_time>
 <nm:covariance_information><![CDATA[
 ]]></nm:covariance_information>
 <nm:covariance_status nm:error='0' nm:numnegeigenvalues='-1' nm:mineigenvalue='0.0000000000000000' nm:maxeigenvalue='0.0000000000000000' nm:rms='0.0000000000000000'/>
-<nm:covariance_elapsed_time>20.89</nm:covariance_elapsed_time>
+<nm:covariance_elapsed_time>31.74</nm:covariance_elapsed_time>
 <nm:final_objective_function_text>MINIMUM VALUE OF OBJECTIVE FUNCTION</nm:final_objective_function_text>
 <nm:final_objective_function>30904.408631980630</nm:final_objective_function>
 <nm:theta>
@@ -995,11 +980,11 @@ Days until program expires : 276
 </nm:eigenvalues>
 </nm:estimation>
 <nm:post_process_times>
-<nm:post_elapsed_time>1.86</nm:post_elapsed_time>
-<nm:finaloutput_elapsed_time>0.25</nm:finaloutput_elapsed_time>
+<nm:post_elapsed_time>2.70</nm:post_elapsed_time>
+<nm:finaloutput_elapsed_time>0.14</nm:finaloutput_elapsed_time>
 </nm:post_process_times>
 </nm:problem>
 </nm:nonmem>
-<nm:stop_datetime>2023-10-13T13:56:34.288</nm:stop_datetime>
-<nm:total_cputime>71.430</nm:total_cputime>
+<nm:stop_datetime>2024-03-12T08:59:04.345</nm:stop_datetime>
+<nm:total_cputime>73.128</nm:total_cputime>
 </nm:output>

@@ -29,7 +29,7 @@ mrg_vpc_theme = new_vpc_theme(list(
   sim_median_fill = "grey60", sim_median_alpha = 0.5
 ))
 
-spec <- ys_load(here("data/spec/analysis3.yml"))
+spec <- ys_load(here("data/derived/pk.yml"))
 lab <- ys_get_short_unit(spec, parens = TRUE, title_case = TRUE)
 
 #' 
@@ -65,8 +65,7 @@ sim <- function(rep, data, model) {
     carry_out = "EVID,STUDYN,LDOS,DOSE,PRED",
     recover = "STUDY,C,USUBJID,ACTARM,RF,Renal,Hepatic", 
     Req = "Y", 
-    output = "df", 
-    quiet  = TRUE
+    output = "df"
   ) %>%  mutate(irep = rep)
 }
 

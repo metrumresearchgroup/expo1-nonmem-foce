@@ -12,8 +12,8 @@ Building NONMEM Executable
 Starting nonmem execution ...
 License Registered to: Metrum Research Group
 Expiration Date:    14 JUL 2024
-Current Date:       13 OCT 2023
-Days until program expires : 276
+Current Date:       12 MAR 2024
+Days until program expires : 122
 
 
  First Order Conditional Estimation with Interaction
@@ -253,8 +253,8 @@ Days until program expires : 276
             -4.2248E-01  2.2410E-03
  GRADIENT:   8.1321E-02 -7.8788E-01 -9.8835E-03  2.3339E-01  1.1307E-01  6.1466E-03  1.2179E-03 -9.1502E-04  7.2785E-03 -7.7349E-03
              7.8887E-03  3.1845E-02
- Elapsed estimation  time in seconds:    20.29
- Elapsed covariance  time in seconds:    15.15
- Elapsed postprocess time in seconds:     3.52
- Elapsed finaloutput time in seconds:     0.34
+ Elapsed estimation  time in seconds:    23.24
+ Elapsed covariance  time in seconds:    17.55
+ Elapsed postprocess time in seconds:     3.27
+ Elapsed finaloutput time in seconds:     0.30
 Done with nonmem execution

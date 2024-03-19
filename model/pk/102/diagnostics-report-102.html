@@ -1532,10 +1532,10 @@ to. Here the figures are saved to
 <p>── Status ─────────────────────────────────</p>
 <p>• Finished Running</p>
 <p>── Absolute Model Path ───────────────────────────</p>
-<p>• /data/home/ryanm/bbr-nonmem-poppk-foce/model/pk/102</p>
+<p>• /data/bbr-nonmem-poppk-foce/model/pk/102</p>
 <p>── YAML &amp; Model Files ───────────────────────────</p>
-<p>• /data/home/ryanm/bbr-nonmem-poppk-foce/model/pk/102.yaml</p>
-<p>• /data/home/ryanm/bbr-nonmem-poppk-foce/model/pk/102.ctl</p>
+<p>• /data/bbr-nonmem-poppk-foce/model/pk/102.yaml</p>
+<p>• /data/bbr-nonmem-poppk-foce/model/pk/102.ctl</p>
 <p>── Description ───────────────────────────────</p>
 <p>• Base Model</p>
 <p>── Tags ──────────────────────────────────</p>
@@ -1553,7 +1553,7 @@ to. Here the figures are saved to
 weight. Will consider additional RUV structures</p>
 <p>• 2: Proportional RUV performed best over additive (103) and combined
 (104)</p>
-<p>Dataset: ../../../data/derived/analysis3.csv</p>
+<p>Dataset: ../../../data/derived/pk.csv</p>
 <p>Records: 4292 Observations: 3142 Subjects: 160</p>
 <p>Objective Function Value (final est. method): 30997.908</p>
 <p>Estimation Method(s):</p>
@@ -1754,26 +1754,27 @@ questions you’re trying to address.</p>
 <p>It is considered good practice to include these details at the end of
 all rmd scripts</p>
 <pre class="r"><code>Sys.getenv(&quot;AMI_NAME&quot;)</code></pre>
-<pre><code>## [1] &quot;metworx-22.09-20220915120953-e92bea3c&quot;</code></pre>
+<pre><code>## [1] &quot;&quot;</code></pre>
 <pre class="r"><code>sessioninfo::session_info()</code></pre>
-<pre><code>## ─ Session info ───────────────────────────────────────────────────────────────
+<pre><code>## ─ Session info ────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 ##  setting  value
 ##  version  R version 4.1.3 (2022-03-10)
 ##  os       Ubuntu 18.04.6 LTS
 ##  system   x86_64, linux-gnu
-##  ui       X11
+##  ui       RStudio
 ##  language (EN)
-##  collate  en_US.UTF-8
-##  ctype    en_US.UTF-8
+##  collate  C.UTF-8
+##  ctype    C.UTF-8
 ##  tz       America/New_York
-##  date     2023-10-13
+##  date     2024-03-12
+##  rstudio  2022.02.4+500.pro1 Prairie Trillium (server)
 ##  pandoc   2.17.1.1 @ /usr/lib/rstudio-server/bin/quarto/bin/ (via rmarkdown)
 ## 
-## ─ Packages ───────────────────────────────────────────────────────────────────
+## ─ Packages ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 ##  package      * version date (UTC) lib source
 ##  assertthat     0.2.1   2019-03-21 [1] CRAN (R 4.1.3)
 ##  backports      1.4.1   2021-12-13 [1] CRAN (R 4.1.3)
-##  bbr          * 1.7.0   2023-10-12 [1] MPNDEV (R 4.1.3)
+##  bbr          * 1.7.0   2024-03-11 [1] MPNDEV (R 4.1.3)
 ##  bit            4.0.5   2022-11-15 [1] CRAN (R 4.1.3)
 ##  bit64          4.0.5   2020-08-30 [1] CRAN (R 4.1.3)
 ##  bslib          0.5.1   2023-08-11 [1] CRAN (R 4.1.3)
@@ -1799,32 +1800,39 @@ all rmd scripts</p>
 ##  gridExtra      2.3     2017-09-09 [1] CRAN (R 4.1.3)
 ##  gridGraphics   0.5-1   2020-12-13 [1] CRAN (R 4.1.3)
 ##  gtable         0.3.4   2023-08-21 [1] CRAN (R 4.1.3)
+##  haven          2.5.3   2023-06-30 [1] CRAN (R 4.1.3)
 ##  here         * 1.0.1   2020-12-13 [1] CRAN (R 4.1.3)
 ##  hms            1.1.3   2023-03-21 [1] CRAN (R 4.1.3)
 ##  htmltools      0.5.6   2023-08-10 [1] CRAN (R 4.1.3)
 ##  jquerylib      0.1.4   2021-04-26 [1] CRAN (R 4.1.3)
 ##  jsonlite       1.8.7   2023-06-29 [1] CRAN (R 4.1.3)
-##  knitr          1.44    2023-09-11 [1] CRAN (R 4.1.3)
+##  knitr        * 1.44    2023-09-11 [1] CRAN (R 4.1.3)
 ##  labeling       0.4.3   2023-08-29 [1] CRAN (R 4.1.3)
+##  lastdose     * 0.4.1   2023-04-27 [1] MPNDEV (R 4.1.3)
+##  later          1.3.1   2023-05-02 [1] CRAN (R 4.1.3)
 ##  lattice        0.21-8  2023-04-05 [1] CRAN (R 4.1.3)
 ##  lifecycle      1.0.3   2022-10-07 [1] CRAN (R 4.1.3)
 ##  lubridate    * 1.9.2   2023-02-10 [1] CRAN (R 4.1.3)
 ##  magrittr       2.0.3   2022-03-30 [1] CRAN (R 4.1.3)
 ##  Matrix         1.6-1.1 2023-09-18 [1] CRAN (R 4.1.3)
 ##  mgcv           1.9-0   2023-07-11 [1] CRAN (R 4.1.3)
-##  mrggsave     * 0.4.5   2023-10-12 [1] MPNDEV (R 4.1.3)
-##  mrgmisc      * 0.1.5   2023-10-12 [1] MPNDEV (R 4.1.3)
+##  mrgda        * 0.9.0   2023-10-06 [1] MPNDEV (R 4.1.3)
+##  mrggsave     * 0.4.5   2024-03-11 [1] MPNDEV (R 4.1.3)
+##  mrgmisc      * 0.1.5   2024-03-11 [1] MPNDEV (R 4.1.3)
 ##  munsell        0.5.0   2018-06-12 [1] CRAN (R 4.1.3)
 ##  nlme           3.1-163 2023-08-09 [1] CRAN (R 4.1.3)
 ##  patchwork    * 1.1.3   2023-08-14 [1] CRAN (R 4.1.3)
 ##  pillar         1.9.0   2023-03-22 [1] CRAN (R 4.1.3)
 ##  pkgconfig      2.0.3   2019-09-22 [1] CRAN (R 4.1.3)
 ##  plyr           1.8.8   2022-11-11 [1] CRAN (R 4.1.3)
-##  pmplots      * 0.3.7   2023-10-12 [1] MPNDEV (R 4.1.3)
-##  pmtables       0.6.0   2023-10-12 [1] MPNDEV (R 4.1.3)
+##  pmplots      * 0.3.7   2024-03-11 [1] MPNDEV (R 4.1.3)
+##  pmtables     * 0.6.0   2024-03-11 [1] MPNDEV (R 4.1.3)
+##  prettyunits    1.1.1   2020-01-24 [1] CRAN (R 4.1.3)
 ##  processx       3.8.2   2023-06-30 [1] CRAN (R 4.1.3)
+##  progress       1.2.2   2019-05-16 [1] CRAN (R 4.1.3)
 ##  ps             1.7.5   2023-04-18 [1] CRAN (R 4.1.3)
 ##  purrr        * 1.0.2   2023-08-10 [1] CRAN (R 4.1.3)
+##  quarto         1.3     2023-09-19 [1] CRAN (R 4.1.3)
 ##  R6             2.5.1   2021-08-19 [1] CRAN (R 4.1.3)
 ##  RColorBrewer   1.1-3   2022-04-03 [1] CRAN (R 4.1.3)
 ##  Rcpp           1.0.11  2023-07-06 [1] CRAN (R 4.1.3)
@@ -1853,12 +1861,12 @@ all rmd scripts</p>
 ##  xfun           0.40    2023-08-09 [1] CRAN (R 4.1.3)
 ##  xtable         1.8-4   2019-04-21 [1] CRAN (R 4.1.3)
 ##  yaml         * 2.3.7   2023-01-23 [1] CRAN (R 4.1.3)
-##  yspec        * 0.6.1   2023-10-12 [1] MPNDEV (R 4.1.3)
+##  yspec        * 0.6.1   2024-03-11 [1] MPNDEV (R 4.1.3)
 ## 
-##  [1] /data/home/ryanm/bbr-nonmem-poppk-foce/renv/library/R-4.1/x86_64-pc-linux-gnu
-##  [2] /data/home/ryanm/.cache/R/renv/sandbox/R-4.1/x86_64-pc-linux-gnu/dbd573bd
+##  [1] /data/bbr-nonmem-poppk-foce/renv/library/R-4.1/x86_64-pc-linux-gnu
+##  [2] /data/home/graceo/.cache/R/renv/sandbox/R-4.1/x86_64-pc-linux-gnu/dbd573bd
 ## 
-## ──────────────────────────────────────────────────────────────────────────────</code></pre>
+## ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────</code></pre>
 <pre class="r"><code>bbr::bbi_version()</code></pre>
 <pre><code>## [1] &quot;3.3.0&quot;</code></pre>
 </div>

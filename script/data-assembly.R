@@ -26,7 +26,7 @@ derived_path <- here("data", "derived", "examp-da.csv")
 
 # Read in data specification ---------------
 # Tell R where to find the yml
-specLo <- here("data", "spec", "examp-da-spec.yml")
+specLo <- here("data", "derived", "da-spec.yml")
 
 # load in the spec file
 spec <- ys_load(specLo)

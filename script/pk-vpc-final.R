@@ -51,7 +51,7 @@ runno <- 106
 data <- nm_join(here("model/pk/106"), .superset = TRUE)
 data <- filter(data, is.na(C))
 
-spec <- ys_load(here("data/spec/analysis3.yml"))
+spec <- ys_load(here("data/derived/pk.yml"))
 spec <- ys_namespace(spec, "long")
 lab <- ys_get_short_unit(spec, parens = TRUE, title_case = TRUE)
 data <- ys_add_factors(data, spec)
@@ -77,8 +77,7 @@ sim <- function(rep, data, model) {
     carry_out = "EVID,STUDYN,LDOS,DOSE",
     recover = "STUDY,C,USUBJID,ACTARM,RF,Renal,Hepatic", 
     Req = "Y", 
-    output = "df", 
-    quiet  = TRUE
+    output = "df"
   ) %>%  mutate(irep = rep)
 }
 

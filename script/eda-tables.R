@@ -36,10 +36,10 @@ set.seed(5238974)
 options(mrg.script = thisScript, pmtables.dir = tabDir)
 
 # Read in dataset ----------------------------
-dat = fread(file = here(dataDir, "analysis3.csv"), na.strings='.') 
+dat = fread(file = here(dataDir, "pk.csv"), na.strings='.') 
 
 # yspec details ----------------------------
-specLo = here("data", "spec", "analysis3.yml")
+specLo = here(dataDir, "pk.yml")
 spec <- ys_load(specLo)
 
 # look at which namespaces are available in the yspec

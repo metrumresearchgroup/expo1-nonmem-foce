@@ -1,10 +1,10 @@
-Fri Oct 13 13:54:55 EDT 2023
+Tue Mar 12 08:57:26 EDT 2024
 $PROBLEM From bbr: see 103.yaml for details
 
 $INPUT C NUM ID TIME SEQ CMT EVID AMT DV AGE WT HT EGFR ALB BMI SEX AAG
        SCR AST ALT CP TAFD TAD LDOS MDV BLQ PHASE
 
-$DATA ../../../data/derived/analysis3.csv IGNORE=(C='C', BLQ=1)
+$DATA ../../../data/derived/pk.csv IGNORE=(C='C', BLQ=1)
 
 $SUBROUTINE ADVAN4 TRANS4
 
@@ -62,8 +62,8 @@ Note: Analytical 2nd Derivatives are constructed in FSUBS but are never used.
 
 License Registered to: Metrum Research Group
 Expiration Date:    14 JUL 2024
-Current Date:       13 OCT 2023
-Days until program expires : 276
+Current Date:       12 MAR 2024
+Days until program expires : 122
 1NONLINEAR MIXED EFFECTS MODEL PROGRAM (NONMEM) VERSION 7.5.1
  ORIGINALLY DEVELOPED BY STUART BEAL, LEWIS SHEINER, AND ALISON BOECKMANN
  CURRENT DEVELOPERS ARE ROBERT BAUER, ICON DEVELOPMENT SOLUTIONS,
@@ -1039,9 +1039,9 @@ Days until program expires : 276
  TOTAL EFFECTIVE ETAS (NIND*NETA):                           480
   
  #TERE:
- Elapsed estimation  time in seconds:    46.97
- Elapsed covariance  time in seconds:    10.10
- Elapsed postprocess time in seconds:     1.78
+ Elapsed estimation  time in seconds:    55.33
+ Elapsed covariance  time in seconds:    17.72
+ Elapsed postprocess time in seconds:     3.19
 1
  
  
@@ -1394,7 +1394,7 @@ Days until program expires : 276
  
          4.69E-02  8.64E-02  1.51E-01  2.71E-01  3.75E-01  6.40E-01  6.94E-01  1.08E+00  1.18E+00  1.50E+00  1.83E+00  4.15E+00
  
- Elapsed finaloutput time in seconds:     0.20
- #CPUT: Total CPU Time in Seconds,       58.438
+ Elapsed finaloutput time in seconds:     0.31
+ #CPUT: Total CPU Time in Seconds,       71.051
 Stop Time:
-Fri Oct 13 13:56:17 EDT 2023
+Tue Mar 12 08:59:03 EDT 2024

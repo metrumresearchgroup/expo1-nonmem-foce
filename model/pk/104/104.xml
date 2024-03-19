@@ -5,14 +5,14 @@ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 xsi:schemaLocation="http://namespaces.oreilly.com/xmlnut/address output.xsd"
 xmlns:nm="http://namespaces.oreilly.com/xmlnut/address"
 >
-<nm:start_datetime>2023-10-13T13:55:18.451</nm:start_datetime>
+<nm:start_datetime>2024-03-12T08:57:40.170</nm:start_datetime>
 <nm:control_stream><![CDATA[
 $PROBLEM From bbr: see 104.yaml for details
 
 $INPUT C NUM ID TIME SEQ CMT EVID AMT DV AGE WT HT EGFR ALB BMI SEX AAG
        SCR AST ALT CP TAFD TAD LDOS MDV BLQ PHASE
 
-$DATA ../../../data/derived/analysis3.csv IGNORE=(C='C', BLQ=1)
+$DATA ../../../data/derived/pk.csv IGNORE=(C='C', BLQ=1)
 
 $SUBROUTINE ADVAN4 TRANS4
 
@@ -73,8 +73,8 @@ Note: Analytical 2nd Derivatives are constructed in FSUBS but are never used.
 <nm:license_information><![CDATA[
 License Registered to: Metrum Research Group
 Expiration Date:    14 JUL 2024
-Current Date:       13 OCT 2023
-Days until program expires : 276
+Current Date:       12 MAR 2024
+Days until program expires : 122
 ]]></nm:license_information>
 <nm:program_information><![CDATA[
 1NONLINEAR MIXED EFFECTS MODEL PROGRAM (NONMEM) VERSION 7.5.1
@@ -407,11 +407,11 @@ Days until program expires : 276
 <nm:col nm:cname='EPS2'>10.286630023928501</nm:col>
 </nm:row>
 </nm:epsshrinkvr>
-<nm:estimation_elapsed_time>34.42</nm:estimation_elapsed_time>
+<nm:estimation_elapsed_time>15.58</nm:estimation_elapsed_time>
 <nm:covariance_information><![CDATA[
 ]]></nm:covariance_information>
 <nm:covariance_status nm:error='0' nm:numnegeigenvalues='-1' nm:mineigenvalue='0.0000000000000000' nm:maxeigenvalue='0.0000000000000000' nm:rms='0.0000000000000000'/>
-<nm:covariance_elapsed_time>26.25</nm:covariance_elapsed_time>
+<nm:covariance_elapsed_time>13.50</nm:covariance_elapsed_time>
 <nm:final_objective_function_text>MINIMUM VALUE OF OBJECTIVE FUNCTION</nm:final_objective_function_text>
 <nm:final_objective_function>30997.712690474291</nm:final_objective_function>
 <nm:theta>
@@ -942,11 +942,11 @@ Days until program expires : 276
 </nm:eigenvalues>
 </nm:estimation>
 <nm:post_process_times>
-<nm:post_elapsed_time>1.91</nm:post_elapsed_time>
-<nm:finaloutput_elapsed_time>0.21</nm:finaloutput_elapsed_time>
+<nm:post_elapsed_time>1.71</nm:post_elapsed_time>
+<nm:finaloutput_elapsed_time>0.17</nm:finaloutput_elapsed_time>
 </nm:post_process_times>
 </nm:problem>
 </nm:nonmem>
-<nm:stop_datetime>2023-10-13T13:56:23.071</nm:stop_datetime>
-<nm:total_cputime>60.428</nm:total_cputime>
+<nm:stop_datetime>2024-03-12T08:58:12.066</nm:stop_datetime>
+<nm:total_cputime>31.206</nm:total_cputime>
 </nm:output>

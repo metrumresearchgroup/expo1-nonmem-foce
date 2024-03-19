@@ -1,0 +1,102 @@
+SETUP__:
+  description: yspec internal column database
+C:
+  short: Commented rows
+  values: [".","C"]
+  decode: ["Not a comment", "Comment for exclusion"]
+  type: character
+NUM:
+  short: Row number
+  type: numeric
+ID:
+  short: NONMEM ID number
+  type: numeric
+  comment: It must be unique per study and for the entire analysis dataset
+TIME:
+  short: Time after first dose
+  unit: hour
+  unit.plot: h
+CMT:
+  short: Compartment
+  values: [1, 2]
+  decode: ["Dose", "Observation"]
+EVID:
+  short: Event identifier
+  type: numeric
+  values: [0, 1]
+  decode: ["Observation event", "Dosing event"]
+DVID:
+  short: Dependent variable identifier
+  values: [1, 2]
+  decode: ["Dose", "Observation"]
+AMT:   
+  short: Dose amount
+  type: numeric
+  unit: mg
+DV:
+  short: Dependent variable
+AGE: 
+  short: Age
+  unit: years
+WT: 
+  short: Weight
+  unit: kg
+EGFR:
+  short: Estimated GFR
+  label: Estimated glomerular filtration rate
+  unit: mL/min/1.73m2
+  unit.tex: "mL/min/1.73m$^2$"
+ALB:
+  short: Albumin
+  unit: g/dL
+SEX: 
+  short: Sex
+  values: [0, 1]
+  decode: ["Male", "Female"]
+SCR: 
+  short: Serum creatinine
+  unit: mg/dL
+AST:
+  short: Aspartate aminotransferase
+  unit: U/L 
+ALT: 
+  short: Alanine aminotransferase
+  unit: U/L
+TAD:
+  short: Time after dose
+  unit: hour
+  unit.plot: h
+LDOS:
+  short: Last dose amount
+  unit: mg
+MDV:
+  short: Missing dependent variable
+  values: [0, 1]
+  decode: ["No", "Yes"]
+BLQ:
+  short: Below limit of quantification
+  values: [1, 0]
+  decode: ["Above QL", "Below QL"]
+DOSE: 
+  short: Nominal dose amount
+  values: [0,54,81]
+  decode: ["0 mg","54 mg", "81 mg"]
+  make_factor: true
+SUBJ:
+  short: Subject identifer
+  type: character
+USUBJID:
+  short: Unique subject identifier
+  type: character
+STUDY: 
+  short: Study name
+  type: character
+  make_factor: true
+ACTARM: 
+  short: Treatment arm
+  type: character
+  values: 
+    - Placebo
+    - Xanomeline Low Dose
+    - Xanomeline High Dose
+  make_factor: true

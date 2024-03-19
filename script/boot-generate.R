@@ -38,7 +38,7 @@ template_ctl <- readLines(file.path(pk_model_dir, "boot-106-template.ctl"))
 #' - $DATA ../data/{{run_num}}.csv
 #' - Optionally add OID at the end of $INPUT; but not required
 
-nmdata <- read_csv("../data/derived/analysis3.csv", na = '.')
+nmdata <- read_csv("../data/derived/pk.csv", na = '.')
 nmdata <- filter(nmdata, is.na(C))
 
 #' ## Looped over multiple times

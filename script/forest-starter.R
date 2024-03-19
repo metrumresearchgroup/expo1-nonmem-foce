@@ -28,7 +28,7 @@ dd <- expand.grid(
   dose = c(10, 20, 30)
 )
 
-covar <- fread(here("data/derived/analysis3.csv"), na.strings = '.')
+covar <- fread(here("data/derived/pk.csv"), na.strings = '.')
 covar <- filter(covar, STUDYN %in% c(1,3))
 covar <- distinct(covar, ID, .keep_all=TRUE)
 covar <- group_by(covar, RF)

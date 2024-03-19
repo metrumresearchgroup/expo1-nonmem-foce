@@ -44,7 +44,7 @@ options(mrg.script = thisScript, mrggsave.dir = figDir)
 
 
 # Read in dataset ----------------------------
-dat = fread(file = here(dataDir, "analysis3.csv"), na.strings = '.')
+dat = fread(file = here(dataDir, "pk.csv"), na.strings = '.')
 
 
 # yspec details ----------------------------
@@ -54,7 +54,7 @@ dat = fread(file = here(dataDir, "analysis3.csv"), na.strings = '.')
 # with the yspec units
 
 # Tell R where to find the yml
-specLo = here("data", "spec", "analysis3.yml")
+specLo = here(dataDir, "pk.yml")
 
 # load in the spec file
 spec = ys_load(specLo)

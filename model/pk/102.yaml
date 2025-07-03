@@ -1,0 +1,21 @@
+model_type: nonmem
+based_on:
+- '101'
+model_path: 102.ctl
+tags:
+- two-compartment + absorption
+- ETA-CL
+- ETA-KA
+- ETA-V2
+- CLWT-allo
+- V2WT-allo
+- QWT-allo
+- V3WT-allo
+- proportional RUV
+notes:
+- Allometric scaling with weight reduces eta-V2 correlation with weight. Will consider
+  additional RUV structures
+- Proportional RUV performed best over additive (103) and combined (104)
+description: Base Model
+star:
+- yes

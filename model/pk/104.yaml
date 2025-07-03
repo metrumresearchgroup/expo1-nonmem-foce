@@ -1,0 +1,17 @@
+model_type: nonmem
+based_on:
+- '102'
+model_path: 104.ctl
+tags:
+- two-compartment + absorption
+- ETA-CL
+- ETA-KA
+- ETA-V2
+- CLWT-allo
+- V2WT-allo
+- QWT-allo
+- V3WT-allo
+- combined RUV
+notes:
+- Combined RUV performs only slightly better than proportional only, should look at parameter estimates for 104
+- CI for Additive error parameter contains zero and will not be used going forward

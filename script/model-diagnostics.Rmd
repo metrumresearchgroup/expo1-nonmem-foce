@@ -1,0 +1,482 @@
+---
+title: Model Diagnostics
+subtitle: > 
+  Model diagnostics with <font class=mrgc>pmplots</font> and <font class=mrgc>yspec</font>. 
+#image: pmp-strip.png
+order: 700
+categories: 
+- diagnostics
+- pmplots
+- yspec
+- post processing
+- reporting
+fig-cap-location: margin
+fig-width: 5
+fig-height: 4
+fig-align: center
+---
+
+# Introduction
+
+<hr />
+
+During model development goodness-of-fit (GOF) diagnostic plots are generated to assess model fit. Here we demonstrate how to generate diagnostic plots for models using the {{< var tools.pmplots >}} and {{< var tools.yspec >}} packages. For more information on which diagnostics are most appropriate for your project and how to interpret them please refer to the _Other resources_ section at the bottom of this page. 
+
+After working through how to create the diagnostic plots on this page we recommend looking at the {{< var pages.parameterized_reports >}} page. There we show how you can put this code into an R Markdown template and use a feature of R Markdown, the “parameterized report”, to generate a series of diagnostic plots. The idea is that you might create one or two templates during the course of your project and then render each template from the single model-diagnostics.R script to generate diagnostic plots for multiple models. 
+
+
+```{r, include = FALSE}
+#| eval: false
+knitr::opts_chunk$set(
+  echo = TRUE, 
+  cache = TRUE, 
+  autodep = TRUE, 
+  comment = '.', 
+  message = FALSE,
+  warning = FALSE, 
+  fig.align = "center"
+)
+options(pillar.width = Inf)
+```
+
+# Tools used
+
+<hr />
+
+## MetrumRG packages
+
+{{< var used.yspec >}}
+
+{{< var used.pmplots >}}
+
+{{< var used.bbr >}}
+
+## CRAN packages
+
+{{< var used.dplyr >}}
+
+{{< var used.mrgmisc >}}
+
+
+# Outline
+<hr/>
+
+Our model diagnostics are made using the {{< var tools.pmplots >}} package and leveraging the information provided in the spec file through the {{< var tools.yspec >}} package functions. 
+
+Below we demonstrate how to read in your NONMEM® output and create the following plots:
+
+* Observed vs predicted diagnostic plots
+* Normalized prediction distribution error (NPDE) diagnostic plots
+* Conditional weighted residuals (CWRES) diagnostic plots
+* Empirical Bayes estimate(EBE)-based diagnostic plots
+
+
+This is obviously not an exhaustive list and, while we make diagnostics for the final model, run 106, this code can be used for all models. The `pk.csv` data set was created in the data assembly script (`da-pk-01.Rmd`) and has an accompanying data specification (spec), `pk.yml`, in the data/spec directory.
+
+Before continuing, it's important you're familiar with the following terms to understand the examples below: 
+\
+
+* yspec: refers to the package.
+* spec file: refers to the data specification yaml describing your data set.
+* spec object: refers to the R object created from your spec file and used in your R code.
+
+More information on these terms is given on the {{< var pages.intro_to_yspec >}} page.
+
+
+# Set up 
+<hr/>
+
+## Required packages
+
+```{r}
+#| message: false
+#| warning: false
+
+library(bbr)
+library(dplyr)
+library(pmplots)
+library(here)
+library(yspec)
+library(glue)
+library(patchwork)
+
+library(mrgmisc)
+library(yaml)
+library(knitr)
+library(pmtables)
+```
+
+
+```{r, include=FALSE}
+margin <- theme(plot.margin = unit(c(0.2, 0.2, 0.1, 0.1), "in"))
+parens <- pmtables::ensure_parens
+```
+
+# Extracting information from your spec file
+
+<hr />
+
+## Load your spec file 
+
+```{r}
+spec <- ys_load(here("data","derived","pk.yml"))
+head(spec)
+```
+
+## Namespace options 
+
+Use`ys_namespace` to view the available namespaces - here we're going to use the plot namespace.
+
+```{r}
+ys_namespace(spec)
+spec <- ys_namespace(spec, "plot")
+```
+
+## Extract data from your spec object
+
+The covariates of interest for your diagnostic plots could be defined explicitly in the code, for example, 
+
+```{r}
+diagContCov <- c("AGE","WT","ALB","EGFR")
+diagCatCov <- c("STUDY", "RF", "CP", "DOSE")
+```
+
+Alternatively, you can define the covariates of interest once in your spec file using flags and simply read them in here
+
+```{r}
+diagContCov <- pull_meta(spec, "flags")$diagContCov
+diagCatCov <- pull_meta(spec, "flags")$diagCatCov
+```
+
+{{< include ../snippets/_flag.Rmd >}}  
+
+
+# Read in the model output
+
+## Model Object
+
+We use `read_model` from the {{< var tools.bbr >}} package to read the model details into R and assign it to a `mod` object.
+
+This mod object can be piped to other functions in the {{< var tools.bbr >}} package to further understand the model output, for example, by passing the `mod` object to the `model_summary` function you can see
+
+- the analysis dataset location
+- the number of records, observations and subjects included
+- the objective function and estimation method(s)
+- a summary of any heuristic problems detected
+- a table of the model parameter estimates, standard errors and shrinkage
+
+```{r message=FALSE}
+mod <- read_model(here("model","pk","106"))
+sum <- mod %>% model_summary()
+```
+
+## Model dataset
+
+All our NONMEM®-ready datasets include a row number column (a unique row identifier typically called `NUM`) that's added during data assembly. And, when running NONMEM® models, we always request this `NUM` column in each $TABLE. This allows us to take advantage of a {{< var tools.bbr >}} function called `nm_join` that reads in all output table files and joins them back to the input data set.
+
+
+```{r message=FALSE}
+data0 <- nm_join(mod)
+```
+
+The idea is that in NONMEM®, you table just `NUM` and no other input data items because these all get joined back to the nonmem output (including the character columns) by `nm_join`.
+
+By default, the input data is joined to the table files so that the number of rows in the result will match the number of rows in the table files (i.e., the number of rows not bypassed via $IGNORE statements). Use the .superset argument to join table outputs to the (complete) input data set. 
+
+The plot data should include the observation records only (i.e., `EVID==0`) and we use the decode information in your spec object, with the `yspec_add_factors` function, to convert the numerical columns to factors with levels and labels that match the decode descriptions for the plot labels. 
+
+```{r}
+data <- 
+  data0 %>% 
+  filter(EVID==0) %>% 
+  yspec_add_factors(spec, .suffix = "")
+```
+
+# General diagnostic plots
+<hr/>
+
+## Observed vs predicted plots
+
+Observed (DV) vs predicted (PRED or IPRED) plots can be created easily using the `dv_pred` and `dv_ipred` functions in {{< var tools.pmplots >}}. These functions include several options to customize your plots, including using more specific names (shown below).
+
+```{r message=FALSE}
+#| label: fig-dv-pred
+#| fig-cap: Observations versus population predictions of drug concentration. Observed values are indicated by solid black circles. The line of identity (solid grey) is included as a reference (x=y). The dashed blue line represents a LOESS smooth through the data.
+dvp <- dv_pred(data, yname = "concentration (mg/L)")
+dvp
+```
+
+```{r message=FALSE}
+#| label: fig-dv-ipred
+#| fig-cap: Observations versus individual predictions of drug concentration. Observed values are indicated by solid black circles. The line of identity (solid grey) is included as a reference (x=y). The dashed blue line represents a LOESS smooth through the data.
+dvip <- dv_ipred(data, yname = "concentration (mg/L)")
+dvip
+```
+
+## Individual observed vs predicted plots
+
+Individual plots of DV, PRED and IPRED vs time (linear and log scale) are generated with the `dv_pred_ipred` function. These plots are highly customizable but here we show the first plot from a simple example
+
+
+```{r message=FALSE}
+#| label: fig-pred-ipred
+#| fig-cap: Observed (DV), population predicted (PRED) and individual predicted (IPRED) concentration versus time profiles, stratified by individual (ID).
+dvip <- dv_pred_ipred(
+  data,
+  id_per_plot = 9,
+  ncol = 3,
+  angle = 45,
+  use_theme = theme_bw()
+)
+dvip[1]
+```
+
+## NPDE Plots
+
+The {{< var tools.pmplots >}} package includes a series of functions for plotting normalized prediction distribution errors (NPDEs):
+
+- `npde_pred` NPDE vs the population predictions (PRED)
+- `npde_time` NPDE vs time
+- `npde_tad` NPDE vs time after dose (TAD)
+- `npde_cont` NPDE vs continuous covariates
+- `npde_cat` NPDE vs categorical ocvariates
+- `npde_hist` distribution of NPDEs
+
+Again, these functions can be customized and below we show how you can customize the axis labels using information in your spec file, how to map across multiple covariates and how to panel multiple plots into a single figure with the `patchwork` package. 
+
+### NPDE vs population predictions, time and time after dose
+
+The {{< var tools.pmplots >}} package provides basic, intuitive axes labels automatically for plots created using it's functions. However, it also include a series of functions that you can use to customize those labels. Here we demonstrate how to grab the units for time from your spec object and append them to the time labels, and how to include your models specific endpoint with units (in this case, concentration (mg/L)).
+
+```{r}
+xTIME <- pm_axis_time(spec$TIME$unit)
+xTIME
+xTAD  <- pm_axis_tad(spec$TAD$unit)
+xPRED <- glue(pm_axis_pred(), xname = "concentration (mg/L)")
+```
+
+
+```{r message=FALSE}
+#| label: fig-npde-time
+#| fig-cap: Normalized prediction distribution errors (NPDE) versus population predictions, time and time after dose. Solid black circles represent the individual residual values associated with each observation record. The solid horizontal grey line (residuals = 0) was included for reference. The dashed blue line represents a LOESS smooth through the data.
+#| fig-width: 6
+#| fig-height: 7
+p1 <- npde_pred(data, x = xPRED, y = "NPDE //  ")
+p2 <- npde_time(data, x = xTIME)
+p3 <- npde_tad(data, x = xTAD, y = "NPDE //  ")
+p <- p1 / p2 / p3
+p
+```
+
+### NPDE vs continuous covariates
+
+The NPDE vs continuous covariate plots leverage the information in your spec object in two main ways:
+
+(i) the covariates of interest are extracted from the covariate flags in your spec file using the `pull_meta` function from yspec (also described above). 
+(ii) the axis labels are renamed with the short label in the spec
+
+```{r message=FALSE}
+diagContCov <- pull_meta(spec, "flags")$diagContCov
+
+NPDEco <- 
+  spec %>% 
+  ys_select(all_of(diagContCov)) %>%     
+  axis_col_labs(title_case = TRUE, short_max = 10) %>%  
+  as.list()
+
+NPDEco
+```
+
+```{r message=FALSE}
+#| label: fig-npde-cont
+#| fig-cap: Normalized prediction distribution errors (NPDE) versus baseline continuous covariates. Solid black circles represent the individual NPDE values associated with each observation record. The solid horizontal grey line (residuals = 0) is included for reference. The dashed blue line represents a LOESS smooth through the data.
+#| fig-width: 6
+#| fig-height: 6
+pList <- purrr::map(NPDEco, ~ npde_cont(data, x = .x))
+
+pm_grid(pList, ncol = 2)
+```
+### NPDE vs categorical covariates
+
+As above, the information in the spec object was used to to rename the axis labels. These plots also used the spec object to decode the numerical categorical covariate categories (shown above). 
+
+```{r message = FALSE}
+#| label: fig-npde-cat
+#| fig-cap: Normalized prediction distribution errors (NPDE) versus categorical covariates; renal function and child-pugh score. Median values are designated by a solid line in the center of the box. Boxes indicate the inter-quartile range (IQR) with whiskers extending to 1.5*IQR. A dashed black line at y = 0 is included as a reference. N = number of subjects, n = number of records.
+#| fig-width: 5
+#| fig-height: 6
+NPDEca <- 
+  spec %>% 
+  ys_select("RF", "CP") %>% 
+  axis_col_labs(title_case = TRUE, short_max = 20) %>%  
+  as.list()
+pList_cat = purrr::map(NPDEca, ~ npde_cat(data, x = .x))
+pm_grid(pList_cat, ncol=1)
+```
+
+### NPDE histogram
+
+Here we show an NPDE density plot but the y-axis can be customized to show count or density.
+
+```{r message = FALSE}
+#| label: fig-npde-hist
+#| fig-cap: Normalized prediction distribution errors (NPDE) density plot. 
+p <- npde_hist(data)
+p
+```
+
+## Other residual plots
+<hr/>
+
+The {{< var tools.pmplots >}} package includes a similar series of functions to create other residual plots. They're all similarly named but instead of beginning with `npde_` they're prefaced with 
+
+- `res_` for residual functions/plots
+- `wres_` for weighted residual functions/plots
+- `cwres_` for conditional weighted residual functions/plots
+- `cwresi_` for  conditional weighted residual with interaction functions/plots
+
+Below are a couple of examples of CWRES plots. 
+
+### CWRES vs population predictions, time and time after dose
+
+```{r cwres_plots, message = FALSE}
+#| label: fig-cwres-pred
+#| fig-cap: Conditional weighted residual (CWRES) versus population predictions and visit time. Solid black circles represent the individual CWRES values associated with each observation record. The solid horizontal grey line (residuals = 0) was included for reference. The dashed blue line represents a LOESS smooth through the data.
+#| fig-width: 6
+#| fig-height: 7
+p1 <- cwres_pred(data, x = xPRED, y = "CWRES //  ") 
+p2 <- cwres_time(data, x = xTIME) 
+p3 <- cwres_tad(data, x = xTAD, y = "CWRES //  ")
+p <- p1 / p2 / p3
+p
+```
+
+### CWRES quantile-quantile (QQ) and density histogram
+
+```{r qq_density_plots, message = FALSE}
+#| label: fig-cwres-qq-hist
+#| fig-cap: Conditional weighted residual (CWRES) quantile-quantile and density histogram. Quantile-quantile (Q-Q) plot - solid blue circles represent the CWRES values associated with each observation record. The solid black line (y=x) is included for reference. Density plot - density frequency (count) of the CWRES.
+#| fig-width: 5
+#| fig-height: 6
+p <- cwres_q(data) / cwres_hist(data)
+p
+```
+
+# EBE-based diagnostics
+<hr/>
+
+The ETA based plots require a dataset filtered to one record per subject
+```{r message = FALSE}
+id <- distinct(data, ID, .keep_all=TRUE) 
+```
+
+Here we show how to plot:
+
+- `eta_pairs` the correlation and distribution of model ETAs
+- `eta_cont` ETA vs continous covariates
+- `eta_cat` ETA vs categorical covariates
+
+
+Again we'll leverage the information in the spec object in several ways:
+
+- the covariates of interest are extracted from the covariate flags in your spec file using the `pull_meta` function and those covariates are selected from the spec object using `ys_select` function (also described above). 
+- the axis labels are renamed with the short label in the spec using `axis_col_labs`
+- numerical categorical covariates are decoded with the `yspec_add_factors` function
+
+The ETAs to be plotted can either be extracted programatically 
+```{r message = FALSE}
+etas <- stringr::str_subset(names(data), "ETA")
+```
+
+or you can create a list with labels that replace the ETA numbers in your plots
+```{r message = FALSE}
+etas <- c("ETA1//ETA-KA", "ETA2//ETA-V/F", "ETA3//ETA-CL/F")
+```
+
+## ETA pairs plot 
+
+```{r message = FALSE}
+#| label: fig-eta-pairs
+#| fig-cap: Correlation and distribution of individual estimates of interindividual and interoccasion variability. The lower off-diagonal shows a bivariate scatter plot with values indicated by black circles and a dashed blue LOESS smooth trend line through the data. The diagonal shows density frequency (count) plots of the data, and the correlation coefficient is reported in the upper off-diagonal.
+#| fig-width: 5.5
+#| fig-height: 5.5
+p <- eta_pairs(id, etas)
+p
+```
+
+## ETA vs continuous covariates
+
+Here we use a `map_wrap_eta_cont` function to generate plots of all continuous covariates vs each ETA value in a single line. Note that in this case we map over the ETAs and produce one plot per ETA faceted by continous covariates. Below we show a similar example for categorical covariates but there we'll create one plot per covariate and ETA pair. For brevity we'll show an example of the first plot but the code produces one plot per ETA. 
+
+:::{.callout-note collapse="true" appearance="minimal"}
+
+## map_wrap_eta_cont function code
+
+```{r}
+##' Purpose: plot ETA vs all continuous covariates
+##' @param  .map_etas character: name of ETA
+##' @param  .co       string: continuous covariate list
+##' @param  .id       dataframe: includes one record per id
+##' @param  .ncol     number of columns in the plot
+map_wrap_eta_cont <- function(.map_etas,.co,.id, .ncol=2) {
+  .p <- wrap_eta_cont(
+    .id,
+    y = .map_etas,
+    x = .co,
+    use_labels = TRUE,
+    ncol = .ncol, scales= "free_x"
+  )
+}
+```
+
+:::
+
+```{r message = FALSE}
+#| label: fig-eta-pairs-cont
+#| fig-cap: Individual estimates of interindividual variability (IIV) on the absorption rate constant (KA) versus baseline continuous covariates. Black points represent data points with the blue dashed line representing a LOESS smooth through the data. The solid horizontal grey line (residual = 0) is included for reference.
+#| fig-width: 5.5
+#| fig-height: 5.5
+co <- 
+  spec %>% 
+  ys_select(all_of(diagContCov)) %>%    
+  axis_col_labs(title_case = TRUE, short_max = 10)
+
+p <- purrr::map(.x = etas, ~ map_wrap_eta_cont(.x, co, id))
+p[[1]]
+```
+
+
+## ETA vs categorical covariate
+
+Here we show how to map over the categorical covariates of interest and to create one plot per covariate and ETA pair. These plots can be combined using the `patchwork` package. 
+
+
+```{r message=FALSE, eval=TRUE}
+#| label: fig-eta-pairs-cat
+#| fig-cap: Individual estimates of interindividual variability (IIV) versus renal function.  Median values are designated by a solid line in the center of the box. Boxes indicate the inter-quartile range (IQR) with whiskers extending to 1.5*IQR. A dashed black line at y = 0 is included as a reference. N = number of subjects.
+#| fig-width: 6
+#| fig-height: 6
+ca <- 
+  spec %>% 
+  ys_select(diagCatCov) %>% 
+  axis_col_labs(title_case=TRUE, short_max = 20)
+p <- eta_cat(id, ca, etas)
+pRenal <- (p[[5]] + p[[6]]) / (p[[7]] + p[[8]])
+pRenal
+```
+
+
+
+# Other resources
+<hr/>
+
+The script discussed on this page can be found in the {{< var expo_repo.main >}}. To run this code you should consider visiting the {{< var pages.about_the_repo >}} page first.
+
+- Runnable version of the examples on this page: {{< var expo_repo.model_diagnostics >}}. 
+\
+
+## Publications 
+
+- Nguyen et al. Model Evaluation of Continuous Data Pharmacometric Models: Metrics and Graphics. CPT Pharmacometrics Syst Pharmacol. 2017 Feb;6(2):87-109.
+- Byon et al. Establishing best practices and guidance in population modeling: an experience with an internal population pharmacokinetic analysis guidance. CPT Pharmacometrics Syst Pharmacol. 2013 Jul 3;2(7):e51. doi: 10.1038/psp.2013.26. PMID: 23836283; PMCID: PMC6483270.
+

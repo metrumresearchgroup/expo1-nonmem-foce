@@ -1,0 +1,7 @@
+run,threads,estimation_time
+200_4_threads,4,66.97
+200_8_threads,8,36.18
+200_16_threads,16,24.22
+200_32_threads,32,14.66
+200_64_threads,64,13.74
+200_96_threads,96,15.29

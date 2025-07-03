@@ -1,0 +1,38 @@
+# NOTE: this is only to demonstrate how to set up this file.
+# We recommend using this as a template for defining your own
+# tags to suit your project.
+
+# model structure
+one_compartment: one-compartment
+two_compartment: two-compartment
+one_compartment_absorption: one-compartment + absorption
+two_compartment_absorption: two-compartment + absorption
+
+# fixed effects
+
+# random effects
+eta_cl: "ETA-CL"
+eta_ka: "ETA-KA"
+eta_v: "ETA-V"
+eta_v2: "ETA-V2"
+
+# covariates
+cov_cl_egfr: "CLEGFR"
+cov_cl_age: "CLAGE"
+cov_cl_alb: "CLALB"
+cov_cl_wt: "CLWT"
+cov_cl_wt_fixed: "CLWT-allo"
+cov_v2_alb: "V2ALB"
+cov_v2_wt: "V2WT"
+cov_v2_wt_fixed: "V2WT-allo"
+cov_q_wt_fixed: "QWT-allo"
+cov_v3_wt_fixed: "V3WT-allo"
+
+
+# error structure
+proportional_ruv: "proportional RUV"
+additive_ruv: "additive RUV"
+combined_ruv: "combined RUV"
+
+# data
+

@@ -1,0 +1,12 @@
+model_type: nonmem
+based_on:
+- '100'
+model_path: 101.ctl
+tags:
+- two-compartment + absorption
+- ETA-CL
+- ETA-KA
+- ETA-V2
+- proportional RUV
+notes:
+- eta-V2 shows correlation with weight, consider adding allometric weight

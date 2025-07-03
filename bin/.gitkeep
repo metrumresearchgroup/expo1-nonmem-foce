@@ -1,0 +1,4 @@
+# git will not track an empty directory
+# the purpose of this file is just to have something
+# in bin/ so that the directory will exist for when 
+# a user tries to install bbi or something else to it

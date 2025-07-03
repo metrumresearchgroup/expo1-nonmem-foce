@@ -1,0 +1,3 @@
+model_type: nonmem
+notes:
+- Intentionally more complex than necessary for demonstrating parallelization

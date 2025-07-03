@@ -1,0 +1,10 @@
+model_type: nonmem
+model_path: 100.ctl
+tags:
+- one-compartment + absorption
+- ETA-CL
+- ETA-KA
+- ETA-V
+- proportional RUV
+notes:
+- systematic bias, explore alternate compartmental structure

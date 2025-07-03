@@ -1,0 +1,18 @@
+model_type: nonmem
+based_on:
+- '102'
+model_path: 105.ctl
+tags:
+- two-compartment + absorption
+- ETA-CL
+- ETA-KA
+- ETA-V2
+- CLWT-allo
+- V2WT-allo
+- QWT-allo
+- V3WT-allo
+- CLEGFR
+- CLAGE
+- proportional RUV
+notes:
+- Pre-specified covariate model

@@ -1,0 +1,573 @@
+---
+title: Data Preparation
+subtitle: > 
+  Data assembly and documentation with <font class="mrgc">mrgda</font>.
+categories: 
+- yspec
+- mrgda
+- data assembly
+order: 300
+---
+
+# Introduction 
+
+<hr/>
+
+This page will demonstrate our data assembly workflow as we derive a data set
+using a prepared data specification file and a source data set.
+
+# Tools used
+<hr/>
+
+## MetrumRG Packages 
+
+{{< var used.yspec >}}
+
+{{< var used.mrgda >}}
+
+{{< var used.lastdose >}}
+
+## CRAN Packages
+
+{{< var used.dplyr >}}
+
+# Outline
+<hr/>
+
+A source data directory, coming as a collection of `.sas7bdat` files is provided. 
+These files are found in the `data/source` folder. 
+
+A data specification yaml file can be found at `data/derived/da-spec.yml`. 
+A spec object will be created from this using the {{< var tools.yspec >}} package.
+
+Below, we will assemble PK observations and dosing administration records, along
+with baseline covariates to create a NONMEM ready data set.
+
+The `mrgda` package will be used to:
+
+- read the source data into R
+- assign `ID` consistently to each subject
+- write a NONMEM compliant csv file along with data assembly meta data
+
+We will use the spec object and `yspec` package to:
+
+- validate the derived dataset
+- add labels to the derived dataset
+- generate a data definition document in `pdf` format
+
+# Setup
+
+<hr/>
+
+First, we will load the required packages, source data, and data specification file.
+
+## Required packages
+
+All packages will be installed from {{< var tools.mpn >}} via 
+{{< var tools.pkgr >}}.
+
+```{r message=FALSE, warning=FALSE}
+library(tidyverse)
+library(here)
+library(mrgda)
+library(yspec)
+library(lastdose)
+```
+
+## Load in source data
+
+The source data is read in using `read_src_dir()` from the `mrgda` package. It is
+saved to the concise, descriptive variable name `src_list`.
+
+```{r message=FALSE}
+src_list <- read_src_dir(here("data", "source"))
+```
+
+`src_list` is a named list containing data.frames of each source domain. Below we can
+see the contents of one of the domains, demographics (dm).
+
+```{r}
+head(src_list$dm)
+```
+
+## Load and examine the spec object
+
+The spec file (`examp-da-spec.yml`) identifies the desired data columns 
+for the data set we are deriving. We can load the spec file into an object in 
+the R session using the `ys_load()` function from the `yspec` package.
+
+```{r}
+spec <- ys_load(here("data/derived/da-spec.yml"))
+```
+
+Each row in the object contains attributes about one column in the data set.
+The first handful of rows can be viewed with the `head()` function.
+
+```{r}
+head(spec)
+```
+
+:::{.callout-note collapse="true" appearance="minimal"}
+## Learn more about the spec object
+
+Each row in the spec object can have:
+
+- a name which must be $<=$ 8 characters long (by default)
+  - continuous data items have units associated with them
+  - discrete data items (like `SEQ` or `EVID`) can have valid levels listed in 
+    the spec as well as decodes for those levels
+- a "short" name that can be used in figure labels and tables
+- a tex specific namespace so that the units can potentially be returned with LaTeX formatting
+- a flags argument that can be used later to extract only covariate specific columns from the spec
+
+:::
+
+## Define output lists
+
+During data assemblies, we work with two types of variables: subject level and
+time-varying.
+
+Subject level variables are those where there is only one unique value per 
+subject. Sex, race and most demographic/baseline values are examples of these.
+
+Time-varying variables are those that change with time. 
+Dosing records, PK observations and time-varying lab values are examples of these.
+
+To organize the variables into their respective types, we create output lists
+below. All subject level variables are saved in the `derived$sl` list, while 
+time-varying variables are in the `derived$tv` list.
+
+```{r}
+derived <- list()
+derived$sl <- list()
+derived$tv <- list()
+```
+
+# Demographics
+<hr/>
+
+This section will focus on deriving subject level variables from the
+demographics source domain.
+
+## Remove screen failures
+
+First we filter the data to only the subjects we are interested in. Subjects who
+do not meet the inclusion criteria for the study are marked as a `Screen Failure`.
+We want to remove these subjects.
+
+```{r}
+dm0 <-
+  src_list$dm %>%
+  filter(ACTARM != "Screen Failure")
+```
+
+## Grab covariates of interest
+
+According to the specification file, we need to derive `AGE` and `SEX`,
+which can all be found in the `dm` domain.
+
+`SEX` is a categorical variable, which means we need to assign each
+category a numerical value according to the specification file. 
+
+```{r}
+spec$SEX
+```
+
+As shown above, males should be `SEX = 0` and females `SEX = 1`.
+
+```{r}
+dm1 <-
+  dm0 %>%
+  transmute(
+    USUBJID,
+    AGE,
+    SEX = if_else(SEX == "F", 1, 0),
+    ACTARM,
+    STUDY = STUDYID,
+    SUBJ = SUBJID
+  )
+```
+
+## Save to subject level output list
+
+With our variables of interest derived, we save `dm1` to the `derived$sl` list.
+
+```{r}
+derived$sl$dm <- dm1
+```
+
+# Labs
+<hr/>
+
+This section will focus on deriving subject level variables from the
+labs source domain (`lb`).
+
+From the specification file, we need to derive `ALT`, `AST`, `BILI`, `CREAT`
+from the this domain.
+
+## Filter to baseline values
+
+The `LBBLFL` variable in the `lb` domain indicates which records are baseline
+measurements. We can use this variable and the subjects we derived from
+the `dm` domain to filter down to records and subjects of interest.
+
+```{r}
+lb0 <-
+  src_list$lb %>%
+  filter(LBBLFL == "Y") %>% 
+  filter(USUBJID %in% derived$sl$dm$USUBJID) 
+```
+
+## Manipulate the format of the data
+
+Each row in the `lb` domain has one lab test, meaning subjects have multiple 
+rows in the data. We want to transform the data so that each subject only has
+one row for multiple labs. 
+
+`LBTESTCD` identifies the type of lab test and `LBSTRESN` contains the result. 
+We want to update the data such that the `LBTESTCD` values are the names of the
+columns, filled with the `LBSTRESN` values.
+
+```{r}
+lb1 <-
+  lb0 %>%
+  filter(LBTESTCD %in% c("ALT", "AST", "BILI", "CREAT")) %>%
+  select(USUBJID, LBTESTCD, LBSTRESN) %>% 
+  pivot_wider(names_from = "LBTESTCD", values_from = "LBSTRESN") 
+
+lb2 <- lb1 %>% rename(SCR = CREAT)
+```
+
+## Save to subject level output list
+
+Since `lb2` contains baseline labs, we save it to the `derived$sl` list.
+
+```{r}
+derived$sl$lb <- lb2
+```
+
+```{r, include=FALSE}
+# Assemble baseline vitals ------------------------------------------------
+vs0 <-
+  src_list$vs %>%
+  # Filter to only baseline measurements
+  filter(VSBLFL == "Y") %>% 
+  # Filter vs domain to only subjects in the dm output
+  filter(USUBJID %in% derived$sl$dm$USUBJID) 
+
+# Filter to only baseline weight measurements
+vs1 <-
+  vs0 %>%
+  filter(VSTESTCD %in% c("WEIGHT")) %>%
+  # Transform to create WEIGHT column
+  pivot_wider(names_from = "VSTESTCD", values_from = "VSSTRESN") %>% 
+  transmute(
+    USUBJID,
+    WT = WEIGHT
+  )
+# Save the subject level variables to the derived$sl list
+derived$sl$vs <- vs1
+```
+
+# Dosing 
+<hr/>
+
+This section will focus on deriving time-varying dose administration records
+from the `ex` domain. 
+
+## Filter to desired treatment type
+
+The `ex` domain contains dosing records for all treatments given to the subject.
+We can use the `EXTRT` variable to filter the data to only treatments of interest.
+
+```{r}
+ex0 <-
+  src_list$ex %>%
+  filter(EXTRT %in% c("PLACEBO", "XANOMELINE"))
+```
+
+## Define variables of interest
+
+According to the specification file, `EVID` and `DVID` need to be set to the
+numeric decodes for dosing records. We check this below:
+
+```{r}
+spec$EVID
+```
+
+Dosing records also require an `AMT` variable representing the dose.
+We also need to obtain the date/time of the dosing administration. This 
+information can be found in the `EXSTDTC` variable.
+
+```{r}
+ex1 <-
+  ex0 %>% 
+  transmute(
+    USUBJID,
+    EVID = 1,
+    DVID = 1,
+    DOSE = EXDOSE,
+    AMT = DOSE, 
+    DATETIME = lubridate::ymd(EXSTDTC)
+  )
+```
+
+## Save to time-varying output list
+
+With all doing records captured, `ex1` can be saved to the `derived$tv` list.
+
+```{r}
+derived$tv$ex <- ex1
+```
+
+# PK observations
+<hr/>
+
+This section will focus on deriving time-varying pk observations from the `pc`
+domain. 
+
+## Filter to desired concentrations
+
+The `PCTEST` variable contains a description of the concentration measured.
+We want to filter to only the concentrations we are interested in.
+
+```{r}
+pc0 <-
+  src_list$pc %>%
+  filter(PCTEST == "XANOMELINE")
+```
+
+## Define variables of interest
+
+Similar to dosing records, `EVID` and `DVID` need to be set to the
+numeric decodes provided in the specification file. 
+
+We are also interested in the `PCLLOQ` column. These values represent the
+lower limit of quantification (LLOQ) of each concentration sample. If a
+concentration is lower than the LLOQ, then the below limit of quantification
+(BLQ) flag is set to 1. 
+
+Additionally, the concentration values can be obtained from `PCSTRESN` and the
+date/time of the record from `PCDTC`.
+
+```{r}
+pc1 <-
+  pc0 %>%
+  transmute(
+    USUBJID,
+    EVID = 0,
+    DVID = 2,
+    BLQ = if_else(grepl("<", PCORRES, fixed = TRUE), 1, 0),
+    DV = if_else(BLQ == 0, PCSTRESN, NA_real_),
+    LLOQ = PCLLOQ,
+    DATETIME = lubridate::ymd_hms(PCDTC)
+  )
+```
+
+## Save to time-varying output list
+
+With all doing records captured, `pc1` can be saved to the `derived$tv` list.
+
+```{r}
+derived$tv$pc <- pc1
+```
+
+# Combine domains
+<hr/>
+
+This section will focus on combining the time-varying and subject level data 
+we have assembled above. Once combined, final modifications will be made to 
+match the data to the specification file.
+
+## Bind and join derived data
+
+The data we have saved to `derived$tv` will be used to generate rows in our 
+combined data set. Meanwhile, the data within `derived$sl` will add columns.
+
+First, we will combine the dataframes in `derived$sl`. Notice that we have 
+one row per subject.
+
+```{r}
+baseline_variables <- reduce(derived$sl, full_join, by = "USUBJID")
+head(baseline_variables)
+```
+
+Next, we will bind together the time-varying data and then join on 
+`baseline_variables`. We sort by subject and date/time.
+
+```{r}
+nm0 <-
+  bind_rows(derived$tv) %>%
+  left_join(baseline_variables, by = "USUBJID") %>%
+  arrange(
+    USUBJID,
+    DATETIME
+  )
+```
+
+There are variables that need to be filled for every row within a subject
+(`locf`).
+
+```{r}
+nm1 <-
+  nm0 %>% 
+  group_by(USUBJID) %>%
+  tidyr::fill("DOSE", .direction = "downup") %>%
+  ungroup()
+```
+
+## Derive TIME and TAD 
+
+The {{< var tools.lastdose >}} package can be used to create `TIME` and `TAD` 
+variables in the data set when the following columns are present:
+
+- subject ID 
+- record time 
+- dose amount
+- EVID
+
+```{r}
+nm2 <-
+  nm1 %>%
+  lastdose(include_tafd = TRUE, time_units = "hours") %>%
+  mutate(
+    TIME = TAFD
+  )
+```
+
+## Assign ID variable
+
+The {{< var tools.mrgda >}} package has a function `assign_id()` that can be 
+used to derive the ID variable. It ensures each subject is assigned a consistent 
+unique numerical value.
+
+```{r, message=FALSE}
+nm3 <-
+  nm2 %>%
+  assign_id(.subject_col = "USUBJID")
+```
+
+## Final modifications
+
+To conclude the data assembly, we need to ensure the variables in our data set 
+match those in the specification file. We can use `mrgmisc::pool()` to check
+this:
+
+```{r}
+mrgmisc::pool(names(spec), names(nm3))
+```
+
+There are three more variables we need to add to the data: `C`, `NUM` and `MDV`. 
+These are common NONMEM variables and can be derived as such. It's important
+to wait to derive `NUM` until all other modifications have been made to the data.
+
+```{r}
+nm4 <-
+  nm3 %>% 
+  mutate(
+    MDV = if_else(is.na(DV), 1, 0),
+    C = ".",
+    NUM = 1:n()
+  )
+
+derived$nm <- nm4 %>% select(names(spec))
+```
+
+The final derivation step is to save our final data set to `derived$nm`.
+
+## Verify derived data with yspec
+
+Before submitting our derived data set, we can leverage the spec object to 
+prepare and verify our work.
+
+`yspec` can compare the candidate data set with what is in the specification. 
+The `ys_check()` function will compare the data set and spec object. It will
+output a message saying the result of the comparison.
+
+```{r, message = TRUE, warning}
+ys_check(derived$nm, spec)
+```
+
+Everything looks to be in order! 
+
+:::{.callout-note collapse="true" appearance="minimal"}
+## Learn more about <font class="mrgc">ys_check</font>
+
+The call to `ys_check()` does a limited check of the data against 
+the spec, including
+
+1. all the columns are present and in the correct order
+2. levels of discrete data columns match up between the spec and 
+the data
+3. the range for all continuous data items is within the range 
+specified in the spec
+
+Note also that certain data requirements are also enforced on load, 
+for example
+
+1. all column names contain 8 or fewer characters
+2. the `short` field in the spec contains 40 or fewer characters for 
+all columns
+3. the `label` field in the spec contains 40 or fewer characters for 
+all columns
+:::
+
+## Output data to csv
+
+Since the data and spec object match, our final step is to write the data to
+`data/derived/examp-da.csv`. We can use the `write_derived()` function from 
+`mrgda`.
+
+```{r, eval = TRUE}
+write_derived(
+  .data = derived$nm,
+  .spec = spec,
+  .file = "data/derived/examp-da.csv"
+)
+```
+
+You can view our finished product in the `data/derived` folder.
+
+# Documenting derived data
+<hr/>
+
+This section will provide an example for creating a define document and SAS 
+xport file.
+
+## Write a data definitions document
+
+We create a define document for `examp-da.csv` in the `data/derived` folder. 
+
+```{r, eval = TRUE}
+ys_document(
+  spec, 
+  type = "regulatory", 
+  output_dir = here("data/derived"), 
+  output_file = "examp-da.pdf", 
+  build_dir = definetemplate(), 
+  author = "Kyle Baron"
+)
+```
+
+When rendering the define document, the `regulatory` type is selected, which is 
+set up to follow the format requested for pharmacometrics submissions. The 
+`definetemplate()` format puts a more polished style on the output, but it 
+can be omitted or updated.
+
+We can look at our define document here `data/derived/examp-da.pdf`.
+
+# Other resources
+
+<hr />
+
+The following script from the {{< var expo_repo.main >}} is discussed on this page. If you're interested running this code, visit the {{< var pages.about_the_repo >}} page first.
+
+- Runnable version of the examples on this page: {{< var expo_repo.data_prep >}}
+
+Further uses of the package {{< var tools.yspec >}} can be seen in the
+exploratory data analysis (EDA) pages.
+
+To advance to the EDA content, go here: 
+
+- {{< var pages.eda_figures >}}
+- {{< var pages.eda_tables >}}

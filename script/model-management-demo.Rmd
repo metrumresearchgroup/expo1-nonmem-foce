@@ -1,0 +1,722 @@
+---
+title: "Model Management"
+subtitle: > 
+  Example model submission workflow with <font class=mrgc>bbr</font>.
+#image: bbr-strip.png
+order: 500
+categories: 
+- bbr
+- model management
+- nonmem
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE, 
+  cache = TRUE, 
+  autodep = TRUE, 
+  comment = '.', 
+  message = FALSE,
+  warning = FALSE,
+  out.width = 500, 
+  out.height = 750
+)
+```
+
+# Introduction
+
+Managing the model development process in a traceable and reproducible manner can be a significant challenge. At MetrumRG, we use `bbr` to streamline this process. `bbr` is an R package developed by MetrumRG that serves three primary purposes:
+
+* Submit NONMEM® models, particularly for execution in parallel and/or on a high-performance compute (HPC) cluster (e.g. {{< var pages.about_metworx >}}).
+* Parse NONMEM® outputs into R objects to facilitate model evaluation and diagnostics in R.
+* Annotate the model development process for easier and more reliable traceability and reproducibility.
+
+This page demonstrates the following `bbr` functionality:
+
+* Create and submit a model
+* Simple model evaluation and diagnostics
+* Iterative model development
+* Annotation of models with tags, notes, etc.
+
+
+# Tools used
+
+<hr />
+
+## MetrumRG packages
+{{< var used.bbr >}}
+
+## CRAN packages
+{{< var used.dplyr >}}
+
+# Outline
+
+<hr />
+
+This page details a range of tasks typically performed throughout the modeling process such as defining, submitting and annotating models. Typically, our scientists run this code in a scratch pad style script, because it isn't necessary for the entire coding history for each model to persist. Here, the code used each step of the process is provided as a reference, and a runnable version of this page is available in our Github repository:  {{< var expo_repo.model_mang_demo >}}. 
+
+If you're a new `bbr` user, we recommend you read through the {{< var pkg_resource.bbr_getting_started >}} before trying to run any code. This vignette includes some setup and configuration (e.g., making sure `bbr` can find your NONMEM® installation) that needs to be done. 
+
+Please note that, for the most part, **`bbr` doesn't edit the model structure in your control stream.** This page walks through a sequence of models that might evolve during a simple modeling project. All modifications to the control streams were made directly by the user in the control stream, and below we include comments asking you to edit your control streams manually. 
+
+After working through this content, we recommend reading the {{< var pages.model_run_logs >}} page. The purpose of the {{< var pages.model_run_logs >}} is to provide a high-level overview of the current status of the project, and we show how to leverage the model annotation to summarize your modeling work. Specifically, how to create model run logs using `bbr::run_log()` to summarize key features of each model (including the descriptions, notes and tag fields), and to provide suggestions for model notes that capture _key decision points_ in the modeling process. 
+
+# Set up
+
+<hr />
+
+Load required packages and set file paths to your model and figure directories. 
+
+```{r}
+library(bbr)
+library(dplyr)
+library(here)
+
+MODEL_DIR <- here("model", "pk")
+FIGURE_DIR <- here("deliv", "figure")
+```
+
+```{r, eval = TRUE, include = FALSE}
+#' This section is not visible in the article version of this script.
+#' However, RUN THIS CHUNK if you would like to step through this code interactively.
+#'
+#' Most importantly, it creates a new model directory with your name
+#' so that you can modify and submit these models without touching to originals.
+
+# create scratch model dir for user
+orig_model_dir <- here("model", "pk")
+user_name <- Sys.getenv("USER")
+if (!nzchar(user_name)) user_name <- "user"
+MODEL_DIR <- paste(orig_model_dir, user_name, sep = "-")
+if (fs::dir_exists(MODEL_DIR)) fs::dir_delete(MODEL_DIR)
+fs::dir_create(MODEL_DIR)
+
+# copy through starting files
+fs::file_copy(file.path(orig_model_dir, "bbi.yaml"), file.path(MODEL_DIR, "bbi.yaml"))
+fs::file_copy(file.path(orig_model_dir, "100.ctl"), file.path(MODEL_DIR, "100.ctl"))
+
+# If on Metworx, ping the grid to bring up a compute node.
+# If not on Metworx, set mode to "local" for easier interactive model submission.
+if (nzchar(Sys.getenv("METWORX_VERSION"))) {
+  system("echo 'sleep 10' | qsub")
+} else {
+  options("bbr.bbi_exe_mode" = "local")  
+}
+
+# Check that bbi is installed
+if (!nzchar(bbi_version())) use_bbi()
+
+#' This function is used to "update" your control streams by modifying them
+#' to match the relevant control stream in the original model directory.
+update_demo_ctl <- function(.mod, orig_model_dir = here::here("model", "pk")){
+  
+  new_ctl_path <- get_model_path(.mod)
+  
+  mod_to_copy <- bbr::read_model(file.path(orig_model_dir, bbr::get_model_id(.mod)))
+  orig_ctl_path <- get_model_path(mod_to_copy)
+  
+  # overwrite ctl
+  if(fs::file_exists(new_ctl_path)) fs::file_delete(new_ctl_path)
+  fs::file_copy(orig_ctl_path, dirname(new_ctl_path))
+  
+  return(invisible(.mod))
+}
+```
+
+
+# Model creation and submission
+
+<hr />
+
+## Control stream
+
+Before using `bbr`, you'll need to have a control stream describing your first model. We began this analysis with a simple one compartment model and named our first control stream `100.ctl`:
+
+```{r comment = "", warning = FALSE}
+cat(readLines(file.path(MODEL_DIR, "100.ctl")), sep = "\n")
+```
+
+## Create a model object
+
+After creating your control stream, you create a model object. This model object is passed to all of the other `bbr` functions that submit, summarize, or manipulate models. You can read more about the model object, and the function that creates it, `bbr::new_model()`, in the {{< var pkg_resource.bbr_create_mod_obj >}} section of the "Getting Started" vignette. 
+
+Create your first model: 
+
+```{r, eval = TRUE}
+mod100 <- new_model(file.path(MODEL_DIR, 100))
+```
+
+The first argument to `new_model()` is the path to your model control stream _without the file extension_. The call above assumes you have a control stream named `100.ctl` (or `100.mod`) in the `MODEL_DIR` directory. 
+
+### The model YAML file
+
+Prior to creating your model object with `new_model()`, your model directory had two files: the model control stream and the `bbi.yaml` configuration file (discussed below).
+
+
+The `new_model()` function creates a `100.yaml` file in your model directory that automatically persists any tags, notes, and other model metadata. 
+
+
+While it's useful to know that this YAML file exists, you shouldn't need to interact with it directly (e.g., in the RStudio file tabs). Instead, `bbr` has a variety of functions (i.e., `add_tags()` and `add_notes()`, shown below) that work with the model object to edit the information in the YAML file from your R console. 
+
+### The `bbi.yaml` file
+
+Global settings used by `bbr` are stored in `bbi.yaml` (located in your model directory). You can read more about this file in the {{< var pkg_resource.bbr_yaml_config >}} section of the "Getting Started" vignette.
+
+## Submitting a model
+
+Now that you have your model object, you can submit it to run with `bbr::submit_model()`.
+
+```{r, eval = TRUE}
+submit_model(mod100)
+```
+
+There are numerous customizations available for submitting models. You can find more detailed information in the `bbr` documentation and R help:{{< var pkg_resource.bbr_submit_model >}} and {{< var pkg_resource.bbr_modify_bbi_args >}}.
+
+### Monitoring submitted models
+
+For models submitted to the SGE grid (the default), you can use `system("qstat")` to check on your model jobs. In addition, `bbr` provides some helper functions that show the head and tail (by default, the first 3 and last 5 lines) of specified files and prints them to the console. For example, `tail_lst` shows the latest status of the lst file and, in this case, indicates the model has finished running. 
+
+```{r}
+tail_lst(mod100)
+```
+
+
+
+# Summarize model outputs
+
+<hr />
+
+Once your model has run, you can start looking at the model outputs and creating diagnostics. The `bbr::model_summary()` function returns an object that contains information parsed from a number of files in the output folder.
+
+```{r}
+sum100 <- model_summary(mod100) 
+names(sum100)
+```
+
+This summary object is essentially just a named list that you can explore (e.g., with `View(sum100)`) and includes everything from the .lst file and a few others.
+
+```{r}
+sum100$run_details$output_files_used
+```
+
+## High-level model summary
+
+Printing this summary object `sum100` to the console shows a high-level summary of the model performance. Further, if you're using an Rmarkdown, you can print a well formatted version of this summary using the chunk option `results = 'asis'`:
+
+```{r, results = 'asis'}
+sum100
+```
+
+## Simple parameter table
+
+You can also explore this summary object with one of `bbr`'s helper functions. For example, you can quickly construct a basic parameter table:
+
+```{r}
+sum100 %>% param_estimates()
+```
+
+
+## Investigating heuristics
+
+The summary object printed above showed several of the heuristic problems were flagged when reading the output files. These are not _errors_ per se, but points to check because they could indicate an issue with the model.
+
+The documentation for {{< var pkg_resource.bbr_model_summary >}} describes each of these heuristics. There are helper functions like `bbr::nm_grd()` that pull the gradient file into a tibble. Alternatively, information like the condition number can be extracted from the summary object itself using `sum100$condition_number`.
+
+The `PRDERR` flag in the heuristics section means there was a `PRDERR` file generated by NONMEM® for this run. You can use `file.path(get_output_dir(sum100), "PRDERR")` to easily get the path to that file, and take a look at it with `file.edit()` or `readLines()` to see what the error was.
+
+## Diagnostic plots
+
+During model development, goodness-of-fit (GOF) diagnostic plots are typically generated to assess model fit. We demonstrate how to make these on the {{< var pages.model_diagnostics >}} and {{< var pages.parameterized_reports >}} pages. Our parameterized reports generate a browsable html file including the model summary and all GOF diagnostic plots (in your model directory). They also save out each plot to `.pdf` files in `deliv/figure/{run}/`. You can include any plots of particular interest here, for example, this `CWRES` plot:
+
+```{r, eval = TRUE}
+browseURL(file.path(FIGURE_DIR, "100/100-cwres-combined.pdf"))
+```
+
+# Annotating your model
+
+<hr />
+
+`bbr` has some great features that allow you to easily annotate your models. This helps you document your modeling process as you go, and can be easily retrieved later for creating "run logs" that describe the entire analysis (shown later). 
+
+A well-annotated model development process does several important things:
+
+* Makes it easy to update collaborators on the state of the project.
+* Supports reproducibility and traceability of your results.
+* Keeps the project organized, in case you need to return to it at a later date.
+
+The `bbr` model object contains three annotation fields. The `description` is a character scalar (i.e., a single string), while `notes` and `tags` can contain character vectors of any length. These fields can be used for any purpose but we recommended some patterns below that work for us. These three fields can also be added to the model object at any time (before or after submitting the model). 
+
+## Using `description`
+
+The `description` field is typically only used for particularly notable models and defaults to `NULL` if no description is provided. One benefit of this approach is that you can easily filter your {{< var pkg_resource.bbr_run_log >}} to the notable models using `dplyr::filter(!is.null(description))`.
+
+Descriptions are typically brief, for example, "Base model" or "First covariate model". We demonstrate the `add_description()` function for `mod102` below.
+
+## Using `notes`
+
+Notes are often used for free text observations about a particular model. Some modelers leverage notes as "official" annotations that might get pulled into a run log for a final report of some kind, while other modelers prefer to keep them informal and use them primarily for their own reference.
+
+In this example, based on the CWRES plot above, you might add a note like this to your model, and then move on to testing a two-compartment model (model 101, in the next section).
+
+```{r, eval = TRUE}
+mod100 <- mod100 %>% 
+  add_notes("systematic bias, explore alternate compartmental structure")
+```
+
+## Using `tags`
+
+In contrast to the `description` and `notes` fields, {{< var pkg_resource.bbr_modify_tags >}} can be used to document your modeling work in a more structured way. We highlight some of the benefits of our tagging strategy on the {{< var pages.model_run_logs >}} page and in the {{< var pkg_resource.bbr_run_log >}} section of the "Getting Started" vignette.
+
+While `bbr` accepts a character vector for all tag-related arguments and functions, we highly recommend defining a glossary of tags that can be used throughout the model development. Importantly, this glossary allows you to define a consistent series of tags, and it can be modified and added to throughout the course of the project. Tags become useless if they are inconsistently used; for example, if sometimes you use `"one-compartment"` and other times you use `"one cmpt"`, you can't easily identify all one-compartment models. Using an external glossary prevents this. This Expo repository contains a `tags.yaml` file with some example tags to demonstrate what this glossary might look like, but again, please customize this for your own project.
+
+```{r load tags}
+TAGS <- yaml::read_yaml(here("script", "tags.yaml"))
+str(TAGS)
+```
+
+We demonstrate the benefit of using this tagging strategy when we construct run logs and summary tables below and on the {{< var pages.model_run_logs >}} page. We also demonstrate different functions for interacting with tags below but see {{< var pkg_resource.bbr_modify_tags >}}for details on each of these functions.
+
+
+### Auto-complete for tags
+
+Predefining your tags and reading them into a named list, as shown above, allows you to use Rstudio's auto-complete feature. By typing `TAGS$` you can see all available tags, and when you start typing part of the tag, the list will actively filter the list to relevant tags. For instance, try typing `TAGS$eta` in the console to view the relevant tags with "eta" in them.
+
+
+### Add tags to your model
+
+Here we add a few relevant flags to this first model:
+
+```{r}
+mod100 <- mod100 %>%
+  add_tags(c(
+    TAGS$one_compartment_absorption,
+    TAGS$eta_cl,
+    TAGS$eta_ka,
+    TAGS$eta_v,
+    TAGS$proportional_ruv
+  ))
+```
+
+Now, when you print your model object (`mod100`) to the console, or when you call `run_log()` (described later), you'll see your new tags. You can also see these tags persist in the YAML file on disk.
+
+```{r}
+cat(readLines(file.path(MODEL_DIR, "100.yaml")), sep = "\n")
+```
+
+# Iterative model development
+
+<hr />
+
+After running your first model, you can create a new model based on the previous model, using the `bbr::copy_model_from()` function. This will accomplish several objectives:
+
+* Copy the control stream associated with `.parent_mod` and rename it according to `.new_model`.
+* Create a new model object associated with this new control stream.
+* Fill the `based_on` field in the new model object (see the {{< var pkg_resource.bbr_based_on >}} vignette).
+* Optionally, inherit any tags from the parent model.
+
+## Using `copy_model_from()`
+
+Learn more about this function from {{< var pkg_resource.bbr_copy_model_from >}} or the {{< var pkg_resource.bbr_iteration >}} section of the "Getting Started" vignette.
+
+```{r, eval = TRUE}
+mod101 <- copy_model_from(
+    .parent_mod = mod100,
+    .new_model = 101,
+    .inherit_tags = TRUE
+  ) 
+```
+
+Though `.new_model = 101` is explicitly passed here, this argument can be omitted if you're naming your models numerically, as in this example. If `.new_model` is _not_ passed, `bbr` defaults to incrementing the new model name to the next available integer in the same directory as `.parent_mod`.
+
+### Edit your control stream
+
+As mentioned above, you need to manually edit the new control stream with any modifications. In this case, we updated the model structure from one- to two-compartments. 
+
+If you're using Rstudio, you can easily open your control stream for editing with the following:
+
+```{r, eval = TRUE}
+mod101 %>%
+  get_model_path() %>%
+  file.edit()
+```
+
+```{r overwrite ctl 1, eval = TRUE, include = FALSE}
+# In place of manually editing the control steam, run this function to update from example models contained in this repo
+update_demo_ctl(mod101)
+```
+`bbr` also has several helper functions to help update your control stream, for example, the defined suffixes can be updated directly from your R console. The `update_model_id` function updates the defined suffixes from `{parent_mod}.{suffix}` to `{current_mod}.{suffix}` in your new control stream for the following file extensions: 
+
+- \* .MSF
+- \* .EXT
+- \* .CHN
+- \* .tab
+- \* par.tab
+
+
+```{r, eval = TRUE}
+mod101 <- update_model_id(mod101)
+```
+
+You can easily look at the differences between control streams of a model and it's parent model:
+
+```{r, eval = TRUE}
+model_diff(mod101)
+```
+
+
+
+### Submit the model and update tags
+
+After manually updating your new control stream, you can submit it to run.
+
+```{r, eval = TRUE}
+submit_model(mod101)
+```
+
+Assuming you chose `.inherit_tags = TRUE` when running `copy_model_from`, you can still update these tags to reflect the changes you made to your control stream. 
+
+Here we demonstrate the `replace_tag` function which uses syntax similar to `stringr::str_replace(oldTag, newTag)`. Note, you need to re-assign to the model object to store the modifications made to the tags. In other words, you need to do `mod <- mod %>% replace_tag(...)` and not just `mod %>% replace_tag(...)`. This is also true of notes, descriptions or any other modifications made to the model object.
+
+```{r, eval = TRUE}
+mod101 <- mod101 %>%
+  replace_tag(TAGS$one_compartment_absorption, TAGS$two_compartment_absorption) %>%
+  replace_tag(TAGS$eta_v, TAGS$eta_v2)
+
+```
+
+Again, you can modify tags at any time, either before or after you have submitted a model to run. The changes persist on disk in the model's YAML file and are reflected in the model object memory. This is true of modifying notes, descriptions and any other model attributes as well.
+
+
+### Add notes
+
+In this example, after running model 101 and looking at the model outputs and diagnostics (as described above for model 100), we can see there is a correlation between `eta-V2` and weight. This is the type of feature we might add as a note to our model object before moving on to the next model. 
+
+```{r, eval = TRUE}
+browseURL(file.path(FIGURE_DIR, "101/101-eta-all-cont-cov.pdf"))
+```
+
+```{r, eval = TRUE}
+mod101 <- mod101 %>% 
+  add_notes("eta-V2 shows correlation with weight, consider adding allometric weight")
+```
+
+## Adding weight covariate effects
+
+Next we create a new model, based on 101, and add some covariate effects. In this example, we demonstrate how you can use `add_tags()` instead of `replace_tag()` to add new tags rather than replace any existing tag. See {{< var pkg_resource.bbr_modify_tags >}} for details on the different functions for interacting with tags.
+
+Create a new model by copying model 101, inherit tags from the parent model and add new tags describing the covariate effects:
+
+```{r, eval = TRUE}
+mod102 <- copy_model_from(
+    mod101,
+    .new_model = 102,
+    .inherit_tags = TRUE
+  ) %>% 
+  add_tags(c(
+    TAGS$cov_cl_wt_fixed,
+    TAGS$cov_v2_wt_fixed,
+    TAGS$cov_q_wt_fixed,
+    TAGS$cov_v3_wt_fixed
+  ))
+```
+
+```{r overwrite ctl 2, eval = TRUE, include = FALSE}
+# In place of manually editing the control steam, run this function to update from example models contained in this repo
+update_demo_ctl(mod102)
+```
+
+Check the differences between mod102 and it's parent (mod101):
+```{r, eval = TRUE}
+model_diff(mod102)
+```
+
+
+
+Submit the model:
+
+```{r, eval = TRUE}
+submit_model(mod102)
+```
+
+And, after looking at the model diagnostics (as shown above), add a note to this model:
+
+```{r, eval = TRUE}
+mod102 <- mod102 %>% 
+  add_notes("Allometric scaling with weight reduced eta-V2 correlation with weight. Will consider additional RUV structures")
+```
+
+# Comparing error structures
+
+<hr />
+
+During model development you may reach a "fork in the road" and want to test two different options forward. Here we demonstrate this with two different potential error structures: additive error only (mod103), or combined proportional and additive error terms (mod104). Both new models use `mod102` as the `.parent_mod` argument in `copy_model_from()`.
+
+```{r, eval = TRUE}
+mod103 <- copy_model_from(
+    mod102,
+    .new_model = 103,
+    .inherit_tags = TRUE
+  ) %>%
+  replace_tag(TAGS$proportional_ruv, TAGS$additive_ruv)
+
+mod104 <- copy_model_from(
+    mod102,
+    .new_model = 104,
+    .inherit_tags = TRUE
+  ) %>%
+  replace_tag(TAGS$proportional_ruv, TAGS$combined_ruv)
+```
+
+```{r overwrite ctl 3 & 4, eval = TRUE, include = FALSE}
+# In place of manually editing the control steam, run this function to update from example models contained in this repo
+update_demo_ctl(mod103)
+update_demo_ctl(mod104)
+```
+
+Remember the control streams are updated manually and then you can see the changes made to the additive error model (you also update some parameter estimates, mod103):
+
+```{r, eval = TRUE}
+model_diff(mod103)
+```
+
+As with model 103, model 104 is also based on 102 but it incorporates changes for a combined error model (mod104).  
+```{r, eval = TRUE}
+model_diff(mod104)
+```
+
+## Submit models in batches
+
+In addition to `submit_model()`, which takes a single model object, `bbr` also has a `submit_models()` function, which takes a list of model objects. This is especially useful for tasks like running a bootstrap, or for re-running a batch of models, as shown at the bottom of this page. However, it can also be used to submit two models at once:
+
+```{r, eval = TRUE}
+submit_models(list(mod103, mod104))
+```
+
+## Compare objective functions with `summary_log()`
+
+The `bbr::summary_log()` function essentially runs `bbr::model_summary()` (shown in the "Summarize model outputs" section above) on _all_ models in the specified directory, and parses the outputs into a tibble. This is very useful for comparing multiple models at any point in the project. 
+
+The {{< var pkg_resource.bbr_summary_log >}} help page provides details on what is parsed into this `bbi_summary_log_df` tibble, and the {{< var pkg_resource.bbr_creating_sum_log >}} vignette gives additional tips on how to effectively use this function. For example, the `.include` argument filters to only models which match the run names passed to `.include`. (You can also pass a vector of tags to `.include` to filter to only models with those tags.) This, and other related functionality, is also discussed in more detail on the {{< var pages.model_run_logs >} page.
+
+```{r}
+summary_log(MODEL_DIR, .include = 102:104) %>% 
+  select(
+    run,
+    ofv,
+    param_count,
+    condition_number,
+    any_heuristics
+  )
+```
+
+Based on these metrics, you can begin making decisions about the error structures tested, and you can make notes about these decisions: 
+
+```{r, eval = TRUE}
+mod103 <- mod103 %>% 
+  add_notes("Additive only RUV performs poorly and will not be considered going forward.")
+
+mod104 <- mod104 %>% 
+  add_notes("Combined RUV performs only slightly better than proportional only, should look at parameter estimates for 104")
+```
+
+## Looking at `OMEGA` and `SIGMA`
+
+`bbr` provides helpers for extracting the `OMEGA` and `SIGMA` matrices. You can pass the `bbi_nonmem_summary` object, returned from `model_summary()`, to one of the `get_*()` helpers.
+
+```{r}
+sum104 <- model_summary(mod104)
+get_omega(sum104)
+get_sigma(sum104)
+```
+
+You can also filter the output of `param_estimates()` to see a bit more detail about the `SIGMA` parameters estimated in model 104.
+
+```{r}
+sum104 %>%
+  param_estimates() %>%
+  filter(grepl("SIGMA", parameter_names) & !fixed)
+```
+
+Based on these parameter estimates, you might decide not to proceed with the combined error model because the additive error parameter contains zero. You can make a note of this, and add a description to `mod102` to denote that it's your base model. 
+
+```{r, eval = TRUE}
+mod104 <- mod104 %>% 
+    add_notes("CI for additive error parameter contains zero and will not be used going forward")
+
+mod102 <- mod102 %>% 
+  add_notes("Proportional RUV performed best over additive (103) and combined (104)") %>% 
+  add_description("Base Model")
+```
+
+# Final models
+
+<hr />
+
+## Including covariate effects
+
+<hr />
+
+After identifying our base model, we tested some pre-specified covariates:
+
+```{r, eval = TRUE}
+mod105 <- copy_model_from(
+    mod102,
+    .new_model = 105,
+    .inherit_tags = TRUE
+  ) 
+```
+
+```{r overwrite ctl 5, eval = TRUE, include = FALSE}
+# In place of manually editing the control steam, run this function to update from example models contained in this repo
+update_demo_ctl(mod105)
+```
+Remember to edit the control stream manually: 
+
+```{r, eval = TRUE}
+model_diff(mod105)
+```
+
+## Adding `bbi` arguments and parallelization
+
+There are a number of `bbi` arguments available to modify how models are run. These can be set globally in the bbi.yaml file (see {{< var pkg_resource.bbr_yaml_config >}} section of the "Getting Started" vignette) or  `bbi` arguments can be attached to the model object. Assigning the arguments to the model object means they'll be applied each time the model is submitted. See the section on {{< var pkg_resource.bbr_passing_arg_to_bbi >}}in the "Getting Started" vignette for more details, and a list of valid arguments. 
+
+These `bbi` arguments are also how you run your model in parallel (see {{< var vignette.bbr_parallel >}} vignette for more details).
+
+Here we demonstrate adding arguments that are passed to bbi, submitting the model to run, then updating the tags and notes while waiting for the model to run:
+```{r, eval = TRUE}
+mod105 <- mod105 %>% add_bbi_args(list(clean_lvl = 0))
+
+submit_model(mod105)
+
+mod105 <- mod105 %>%
+  add_tags(c(
+    TAGS$cov_cl_egfr,
+    TAGS$cov_cl_age
+  )) %>%
+  add_notes("Pre-specified covariate model")
+```
+
+## Making final adjustments
+
+Assume you decide on a final model but one of your collaborators is interested in adding the effect albumin to CL. You might copy the covariate model (mod105), add a new tag for the new covariate effect and note the purpose of the model:
+
+```{r, eval = TRUE}
+mod106 <- copy_model_from(
+    mod105,
+    .new_model = 106,
+    .inherit_tags = TRUE
+  ) %>% 
+  add_tags(TAGS$cov_cl_alb) %>%
+  add_notes("Collaborator was interested in adding Albumin to CL")
+
+```
+
+Edit the control stream manually and submit the model.
+
+```{r overwrite ctl 6, eval = TRUE, include = FALSE}
+# In place of manually editing the control steam, run this function to update from example models contained in this repo
+update_demo_ctl(mod106)
+```
+
+```{r, eval = TRUE}
+submit_model(mod106)
+```
+
+Below we show some different ways you can compare these two model outputs to help determine whether 106 is an improvement on 105, and which will be the final model.
+
+### Model heuristics
+
+You can use `bbr::summary_log()` to compare objective functions and check for potential heuristics problems. The {{< var pkg_resource.bbr_summary_log >}} help page details which heuristics are checked. 
+
+```{r}
+summary_log(MODEL_DIR, .include = 105:106) %>%
+  select(run, ofv, condition_number, any_heuristics)
+```
+
+In this case, you can see no heuristics have been triggered for either model.
+
+### Comparing parameter estimates
+
+You might compare the parameter estimates between the two models. You can use `bbr::param_estimates()` to generate a tibble for each model, and then join them together with some help from `dplyr`:
+
+```{r}
+params106 <- mod106 %>% model_summary() %>% param_estimates() %>% select(1:3)
+params105 <- mod105 %>% model_summary() %>% param_estimates() %>% select(1:3)
+
+full_join(
+  params106,
+  params105,
+  by = "parameter_names",
+  suffix = c("_106", "_105")
+) %>%
+  mutate(across(where(is.numeric), pmtables::sig)) %>% 
+  knitr::kable()
+```
+
+### Review diagnostic plots
+
+As mentioned above, we demonstrate how to make GOF diagnostic plots on the {{< var pages.model_diagnostics >}} and {{< var pages.parameterized_reports >}} pages. Our parameterized reports generate a browsable html file (in your model directory: `model/pk/{run}`) and save out each GOF plot to `.pdf` files (in your figure directory: `deliv/figure/{run}/`).
+
+Assuming you have generate the GOF plots for your two models, you can compare the `_eta_pairs.pdf` plots between the two models.
+
+**Model 105**
+```{r, eval = TRUE}
+browseURL(file.path(FIGURE_DIR, "105/105-eta-pairs.pdf"))
+```
+
+**Model 106**
+```{r, eval = TRUE}
+browseURL(file.path(FIGURE_DIR, "106/106-eta-pairs.pdf"))
+```
+
+### Choose final model
+
+After checking your model heuristics, parameter estimates, and GOF plots, the final model was determined to be run 106. You can identify this model as the "final model" in the `description` field so that it can easily be identified as a key model when looking at the run log later.
+
+```{r, eval = TRUE}
+mod106 <- mod106 %>%
+  add_description("Final Model")
+```
+
+### Star models of note
+
+You can also add a "star" to notable models. This can be useful later for organizing your models. For example, this is used for filtering to only starred models when looking at the tibble returned `run_log()` in {{< var pages.model_run_logs >}}. Below, we star the base model and the final model.
+
+```{r}
+mod102 <- add_star(mod102)
+mod106 <- add_star(mod106)
+```
+
+# Submit models to be re-run
+
+There are cases when you may have to re-run some or all of your models. For example, maybe your model or data files changed since the model was last run. You can check this using either the `bbr::config_log()` function or with `bbr` functions that track model lineage; examples of both these approaches are shown in the {{< var pkg_resource.bbr_based_on >}} vignette.
+
+To re-run a _single_ model, simply pass `.overwrite = TRUE` to the `submit_model()` call.
+
+```{r, eval = TRUE}
+submit_model(mod100, .overwrite=TRUE)
+```
+
+To re-run a _group_ of models, pass `.overwrite = TRUE` to the `submit_models()` call.
+
+```{r, eval = TRUE}
+mods <- purrr::map(
+  file.path(MODEL_DIR, 100:106), 
+  read_model
+)
+submit_models(mods, .overwrite=TRUE)
+```
+
+# Other resources
+
+<hr />
+
+The following script from the {{< var expo_repo.main >}} is discussed on this page. If you're interested running this code, visit the {{< var pages.about_the_repo >}} page first.
+
+- Runnable version of the examples on this page: {{< var expo_repo.model_mang_demo >}}
+
+## More `bbr` resources
+
+* {{< var vignette.bbr >}}
+* {{< var pkg_resource.bbr_cheatsheet >}}
+* {{< var repo.bbr >}}

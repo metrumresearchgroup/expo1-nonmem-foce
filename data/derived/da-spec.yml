@@ -1,0 +1,31 @@
+SETUP__:
+  lookup_file: [da-lookup.yml]
+  description: Example PopPK analysis data set
+  sponsor: example-project
+  projectnumber: examp101F
+  use_internal_db: true
+  character_last: true
+  comment_col: "C"
+C:
+NUM:
+ID:
+SUBJ:
+USUBJID:
+TIME:
+DVID: 
+EVID:
+AMT:
+DV:
+AGE:
+WT: 
+SEX: 
+SCR: 
+AST:
+ALT: 
+TAD:
+LDOS:
+MDV:
+BLQ:
+STUDY: 
+DOSE: 
+ACTARM: 

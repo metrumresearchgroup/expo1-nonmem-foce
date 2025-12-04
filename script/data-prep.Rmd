@@ -522,7 +522,7 @@ Since the data and spec object match, our final step is to write the data to
 write_derived(
   .data = derived$nm,
   .spec = spec,
-  .file = "data/derived/examp-da.csv"
+  .file = here("data/derived/examp-da.csv")
 )
 ```
 

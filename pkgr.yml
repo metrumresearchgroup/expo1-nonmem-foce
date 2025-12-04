@@ -49,13 +49,18 @@ Packages:
   - here
   - logitnorm
   - nhanesA
+  - pdftools
   - pmparams 
   - mrgda
   - simpar
+  - templ
+  - this.path
+  - qctools
+  - gt
 
 Repos:
 
-  - MPN: https://mpn.metworx.com/snapshots/stable/2025-02-26
+  - MPN: https://mpn.metworx.com/snapshots/stable/2025-07-16
 
 Customizations:
   Packages:

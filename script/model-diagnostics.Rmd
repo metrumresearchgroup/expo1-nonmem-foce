@@ -71,7 +71,7 @@ Below we demonstrate how to read in your NONMEM® output and create the followin
 * Empirical Bayes estimate(EBE)-based diagnostic plots
 
 
-This is obviously not an exhaustive list and, while we make diagnostics for the final model, run 106, this code can be used for all models. The `pk.csv` data set was created in the data assembly script (`da-pk-01.Rmd`) and has an accompanying data specification (spec), `pk.yml`, in the data/spec directory.
+This is obviously not an exhaustive list and, while we make diagnostics for the final model, run 106, this code can be used for all models. The `pk.csv` data set used in these examples is in `data/derived/` and has an accompanying spec file, `pk.yml`.
 
 Before continuing, it's important you're familiar with the following terms to understand the examples below: 
 \
@@ -458,7 +458,7 @@ Here we show how to map over the categorical covariates of interest and to creat
 #| fig-height: 6
 ca <- 
   spec %>% 
-  ys_select(diagCatCov) %>% 
+  ys_select(all_of(diagCatCov)) %>% 
   axis_col_labs(title_case=TRUE, short_max = 20)
 p <- eta_cat(id, ca, etas)
 pRenal <- (p[[5]] + p[[6]]) / (p[[7]] + p[[8]])
